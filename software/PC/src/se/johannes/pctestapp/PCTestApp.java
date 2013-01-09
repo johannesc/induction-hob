@@ -4,12 +4,12 @@ import se.johannes.inductionlib.KeyBoardCallback;
 import se.johannes.inductionlib.PowerCardCallback;
 import se.johannes.inductionlib.SerialCommunication;
 
-public class PCTestApp extends GUI.Callback implements KeyBoardCallback,
-        PowerCardCallback {
+public class PCTestApp extends GUI.Callback implements PowerCardCallback {
 
     SerialCommunication com;
     GUI gui;
     int[] powerLevels = new int[4];
+    private boolean powered;
 
     public static void main(String[] args) {
         new PCTestApp();
@@ -17,26 +17,22 @@ public class PCTestApp extends GUI.Callback implements KeyBoardCallback,
 
     private PCTestApp() {
         com = new SerialCommunication(SerialCommunication.getPortId(), this,
-                this);
+                KeyBoardCallback.empty);
         gui = new GUI();
         gui.showGUI(this);
     }
 
+    public void onPowerOnOffChanged(boolean power) {
+        System.out.println("Turning power o" + (power ? "n" : "ff"));
+        powered = power;
+        com.setMainPower(powered);
+    }
+
     public void onPowerLevelChanged(int zone, int powerLevel) {
-        System.out.println("Changing powerlevels!");
+        System.out.println("Changing powerlevels in zone " + zone + " to "
+                + powerLevel);
         powerLevels[zone] = powerLevel;
         com.setPowerLevel(powerLevels);
-    }
-
-    @Override
-    public void onSetMainPowerCommand(boolean on) {
-        System.out.println("onSetMainPowerCommand: " + on);
-    }
-
-    @Override
-    public void onPowerOnCommand(int[] powerLevels) {
-        //TODO print something more useful
-        System.out.println("onPowerOnCommand");
     }
 
     @Override
@@ -45,19 +41,36 @@ public class PCTestApp extends GUI.Callback implements KeyBoardCallback,
     }
 
     @Override
-    public void onPotPresent(boolean[] present) {
+    public void onPotPresent(boolean[] present, boolean expectAck,
+            byte checksum) {
         gui.setPotPresent(present);
+        if (expectAck) {
+            com.sendAckPacket(checksum);
+        }
     }
 
     @Override
-    public void onPoweredOnCommand(int powerStatus, int[] powerLevels,
-            boolean[] hot) {
+    public void onPoweredOnCommand(int powerStatus, boolean[] powered,
+            boolean[] hot, boolean expectAck, byte checksum) {
         gui.setPotHot(hot);
-        gui.setPower(powerLevels);
+        if (powerStatus == SerialCommunication.POWERSTATUS_OFF) {
+            gui.setPowered(false);
+            gui.enablePowerControl(false); //TODO should be false
+        } else {
+            gui.setPowered(true);
+            gui.enablePowerControl(true);
+        }
+        if (expectAck) {
+            com.sendAckPacket(checksum);
+        }
     }
 
     @Override
-    public void onPowerLimitCommand(int[] powerLevels) {
+    public void onPowerLimitCommand(int[] powerLevels, boolean expectAck,
+            byte checksum) {
         gui.setLimitPower(powerLevels);
+        if (expectAck) {
+            com.sendAckPacket(checksum);
+        }
     }
 }

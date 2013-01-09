@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
@@ -21,12 +23,15 @@ public class GUI {
     private Callback callback;
 
     Zone[] zones = new Zone[4];
+    JCheckBox powered;
 
     public static void main(String[] args) {
-        new GUI().showGUI(new Callback());
+        GUI gui = new GUI();
+        gui.showGUI(new Callback());
+        gui.enablePowerControl(true);
     }
 
-    public void showGUI(Callback callback) {
+    public void showGUI(final Callback callback) {
         JFrame frame = new JFrame("Simple GUI to control my induction cooker");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -52,9 +57,37 @@ public class GUI {
             frame.getContentPane().add(zones[i], c);
         }
 
+        c.gridx = 0;
+        c.gridy = 2;
+        JCheckBox power = new JCheckBox("Power");
+        frame.getContentPane().add(power, c);
+        power.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent event) {
+                boolean powered = event.getStateChange() == ItemEvent.SELECTED;
+                callback.onPowerOnOffChanged(powered);
+            }
+        });
+
+        powered = new JCheckBox("Powered");
+        powered.setEnabled(false);
+        c.gridx = 1;
+        c.gridy = 2;
+        frame.getContentPane().add(powered, c);
+
         frame.pack();
         frame.setVisible(true);
         this.callback = callback;
+    }
+
+    public void setPowered(boolean on) {
+        powered.setSelected(on);
+    }
+
+    public void enablePowerControl(boolean enable) {
+        for (int i = 0; i < zones.length; i++) {
+            zones[i].enableControl(enable);
+        }
     }
 
     public void setPotPresent(boolean[] potPresent) {
@@ -83,6 +116,10 @@ public class GUI {
     }
 
     public static class Callback {
+        public void onPowerOnOffChanged(boolean power) {
+            System.out.println("Powered o" + (power ? "n" : "ff"));
+        }
+
         public void onPowerLevelChanged(int zone, int powerLevel) {
             System.out.println("Power level in zone " + zone + " changed" +
                     " to " + powerLevel + " in GUI");
@@ -102,6 +139,8 @@ public class GUI {
             control.setMajorTickSpacing(1);
             control.setPaintTicks(true);
             control.setPaintLabels(true);
+            control.setEnabled(false);
+
             actual.setMajorTickSpacing(1);
             actual.setPaintTicks(true);
             actual.setPaintLabels(true);
@@ -138,6 +177,10 @@ public class GUI {
 
         public void setPower(int value) {
             control.setValue(value);
+        }
+
+        public void enableControl(boolean enable) {
+            control.setEnabled(enable);
         }
 
         @Override
