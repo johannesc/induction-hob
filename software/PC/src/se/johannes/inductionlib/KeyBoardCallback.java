@@ -1,7 +1,7 @@
 package se.johannes.inductionlib;
 
 /**
- * 
+ *
  * Interface methods called when commands received from the keyboard
  */
 public interface KeyBoardCallback {

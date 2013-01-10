@@ -12,7 +12,7 @@ import java.sql.Timestamp;
 import java.util.Enumeration;
 
 /**
- * 
+ *
  * This class understands the serial communication for my induction cooker
  * TODO: Split the OS-specific things into a separate class and only talk
  * In-/Out-Streams here. Also remove debug prints or make them possible to turn
@@ -22,8 +22,8 @@ import java.util.Enumeration;
 public class SerialCommunication implements
         SerialPortEventListener {
 
-    private PowerCardCallback powerCardCallback;
-    private KeyBoardCallback keyBoardCallback;
+    private final PowerCardCallback powerCardCallback;
+    private final KeyBoardCallback keyBoardCallback;
 
     InputStream is;
     OutputStream os;
@@ -117,7 +117,7 @@ public class SerialCommunication implements
     public static final int ZONE_RIGHT_BACK = 2;
     public static final int ZONE_RIGHT_FRONT = 3;
 
-    private byte[] powerLevels2Byte = { POWER_LEVEL_0, POWER_LEVEL_U,
+    private final byte[] powerLevels2Byte = { POWER_LEVEL_0, POWER_LEVEL_U,
             POWER_LEVEL_1, POWER_LEVEL_2, POWER_LEVEL_3, POWER_LEVEL_4,
             POWER_LEVEL_5, POWER_LEVEL_6, POWER_LEVEL_7, POWER_LEVEL_8,
             POWER_LEVEL_9, POWER_LEVEL_P };
@@ -133,7 +133,7 @@ public class SerialCommunication implements
 
     /**
      * Turn the power card on or off, sent by keyboard
-     * 
+     *
      * @param on
      */
     public void setMainPower(boolean on) {
@@ -150,7 +150,7 @@ public class SerialCommunication implements
 
     /**
      * Send command to power card in order to control power level on all zones.
-     * 
+     *
      * @param powerLevels
      *            What level 0 - 11 of each zone, see ZONE_*
      */
@@ -184,7 +184,8 @@ public class SerialCommunication implements
 //            System.out.println("Ack disabled");
 //            return;
 //        }
-        System.out.println("Sending ack packet:" + String.format("%02X ", checksum));
+        System.out.println("Sending ack packet:"
+                + String.format("%02X ", checksum));
         byte[] packet = {PACKET_TYPE_ACK, checksum ,0};
         packet[2] = calculateCheckSum(packet, 3);
         try {
@@ -199,21 +200,21 @@ public class SerialCommunication implements
      * Data protocol is a inverted UART with open collector where both Rx and Tx
      * share the same line. Communication settings is 9600, even parity, 1 stop
      * bit.
-     * 
+     *
      * The data is sent as packets of two types: PACKET_TYPE_COMMAND and
      * PACKET_TYPE_ACK. The format of the packets are described below.
-     * 
+     *
      * NOTE: The PACKET_TYPE_* Is not a unique byte in the stream, the checksum
      * might very well be one of these values (have been seen in the pot on
      * command).
-     * 
+     *
      * Both the power card and the keyboard can initiate communication. I guess
      * collisions are handled with the checksum ping-pong protocol.
      */
 
     /**
      * PACKET_TYPE_ACK
-     * 
+     *
      * This packet is sent as a response to PACKET_TYPE_COMMAND the format is:
      * 98 xx yy Where
      * xx is the checksum of the PACKET_TYPE_COMMAND (CC below)
@@ -223,7 +224,7 @@ public class SerialCommunication implements
 
     /**
      * PACKET_TYPE_COMMAND
-     * 
+     *
      * This packet has the following format: C9 XX YY LL nn nn nn nn CC Where:
      * XX YY is the command, if XX is zero it seems like there are no ack sent
      *       XX could also be seen as a "from" address and YY the "to" address
@@ -252,7 +253,7 @@ public class SerialCommunication implements
 
     // Unknown packets. Sent after power cycle:
     // C9 24 2C 02 17 02 D6
-    // 
+    //
     // C9 2C 44 09 17 03 01 84 00 F4 5A EF 88 F0
     // C9 44 2C 03 73 02 00 D3
     // C9 2C 44 03 73 03 00 D2
@@ -336,13 +337,13 @@ public class SerialCommunication implements
             if (buffer[packetLen - 1] != checksum) {
                 System.err.println("Wrong packet checksum!");
             } else {
-    
+
                 short command = (short) ((buffer[1] << 8) | (buffer[2] & 0xFF));
                 commandString = String.format("%04X", command);
                 paramString = "";
-    
+
                 boolean expectAck = buffer[1] == 0 ? false : true;
-    
+
                 switch (command) {
                 case POWER_ON_COMMAND:
                     decodePowerOnCommand(expectAck, checksum);
@@ -359,7 +360,8 @@ public class SerialCommunication implements
                     commandString += " ------------ - -- - UNKNOWN";
                     break;
                 }
-                System.out.println(getTs() + getHexString(buffer, 0, packetLen));
+                System.out
+                        .println(getTs() + getHexString(buffer, 0, packetLen));
                 System.err.println(getTs() + "COMMAND cmd=" + commandString
                         + paramString);
                 System.err.println();

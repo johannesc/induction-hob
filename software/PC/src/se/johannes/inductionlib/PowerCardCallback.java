@@ -1,26 +1,26 @@
 package se.johannes.inductionlib;
 
 /**
- * 
+ *
  * Interface methods called when commands received from the power card
  */
 public interface PowerCardCallback {
 
     /**
      * Called when pot presence is announced
-     * 
+     *
      * @param present
      *            true if a pot is present, false otherwise
      * @param expectAck
      *            true if an ack is expected to be sent
-     * 
+     *
      */
     public void onPotPresent(boolean[] present, boolean expectAck,
             byte checksum);
 
     /**
      * Sent by the power card every now and then.
-     * 
+     *
      * @param powerStatus
      *            0=Off, 1=On (no zones on), 3=On (at least one zone on)
      * @param powered
@@ -66,6 +66,6 @@ public interface PowerCardCallback {
         @Override
         public void onUnknownData() {
         }
-        
+
     };
 }

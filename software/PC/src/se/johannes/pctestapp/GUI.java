@@ -159,7 +159,7 @@ public class GUI {
             sliders.add(actual, BorderLayout.PAGE_START);
             sliders.add(control, BorderLayout.PAGE_END);
             add(sliders, BorderLayout.PAGE_END);
-            
+
             setBorder(BorderFactory.createLineBorder(Color.BLACK));
         }
 

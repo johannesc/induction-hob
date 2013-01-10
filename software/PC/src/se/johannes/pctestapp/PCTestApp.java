@@ -22,12 +22,14 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
         gui.showGUI(this);
     }
 
+    @Override
     public void onPowerOnOffChanged(boolean power) {
         System.out.println("Turning power o" + (power ? "n" : "ff"));
         powered = power;
         com.setMainPower(powered);
     }
 
+    @Override
     public void onPowerLevelChanged(int zone, int powerLevel) {
         System.out.println("Changing powerlevels in zone " + zone + " to "
                 + powerLevel);
