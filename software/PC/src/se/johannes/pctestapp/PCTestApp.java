@@ -4,14 +4,14 @@ import javax.swing.SwingUtilities;
 
 import se.johannes.inductionlib.KeyBoardCallback;
 import se.johannes.inductionlib.PowerCardCallback;
-import se.johannes.inductionlib.SerialCommunication;
+import se.johannes.inductionlib.InductionControl;
 
 // I use the AWT-thread to send data to the induction cooker
 // this is not the best thing to do, but its just a hack anyway...
 //
 public class PCTestApp extends GUI.Callback implements PowerCardCallback {
 
-    SerialCommunication com;
+    InductionControl com;
     GUI gui;
     int[] powerLevels = new int[4];
     private boolean powered;
@@ -22,8 +22,9 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
     }
 
     private PCTestApp() {
-        com = new SerialCommunication(SerialCommunication.getPortId(), this,
-                KeyBoardCallback.empty);
+        SerialPortHelper spHelp = new SerialPortHelper();
+        com = new InductionControl(spHelp.getInputStream(),
+                spHelp.getOutputStream(), this, KeyBoardCallback.empty);
         gui = new GUI();
         gui.showGUI(this);
     }
@@ -43,7 +44,7 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
         com.setPowerLevel(powerLevels);
         boolean inUse = false;
         for (int i = 0; i < powerLevels.length; i++) {
-            if (powerLevels[i] != SerialCommunication.POWER_LEVEL_0) {
+            if (powerLevels[i] != InductionControl.POWER_LEVEL_0) {
                 inUse = true;
                 break;
             }
@@ -118,7 +119,7 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
             @Override
             public void run() {
                 gui.setPotHot(hot);
-                if (powerStatus == SerialCommunication.POWERSTATUS_OFF) {
+                if (powerStatus == InductionControl.POWERSTATUS_OFF) {
                     gui.setPowered(false);
                     gui.enablePowerControl(false);
                 } else {

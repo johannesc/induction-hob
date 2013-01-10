@@ -1,116 +1,55 @@
 package se.johannes.inductionlib;
 
-import gnu.io.CommPortIdentifier;
-import gnu.io.SerialPort;
-import gnu.io.SerialPortEvent;
-import gnu.io.SerialPortEventListener;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Timestamp;
-import java.util.Enumeration;
 
 /**
  *
  * This class understands the serial communication for my induction cooker
- * TODO: Split the OS-specific things into a separate class and only talk
- * In-/Out-Streams here. Also remove debug prints or make them possible to turn
- * off.
+ * TODO: Remove debug prints or make them possible to turn off.
  *
  */
-public class SerialCommunication implements
-        SerialPortEventListener {
+public class InductionControl {
 
     private final PowerCardCallback powerCardCallback;
     private final KeyBoardCallback keyBoardCallback;
 
-    InputStream is;
     OutputStream os;
+    private final Thread readThread;
 
-    public static CommPortIdentifier getPortId() {
-        System.out.println("Starting...");
-        @SuppressWarnings("unchecked")
-        Enumeration<CommPortIdentifier> portList = CommPortIdentifier
-                .getPortIdentifiers();
-        while (portList.hasMoreElements()) {
-            CommPortIdentifier portId = portList.nextElement();
-            System.out.println("name=" + portId.getName());
-            if (portId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
-                // On my windows machine my Bus pirate shows up at COM9
-                // On my Linux it shows up as /dev/ttyUSB0 for now
-                // TODO make this better.
-                if ((portId.getName().equals("COM9"))
-                        || (portId.getName().equals("/dev/ttyUSB0"))) {
-                    return portId;
-                }
-            }
-        }
-        System.err.println("Could not found a serial port to talk with");
-        return null;
-    }
-
-    public SerialCommunication(CommPortIdentifier portId,
+    public InductionControl(
+            final InputStream is,
+            final OutputStream os,
             PowerCardCallback powerCardCallback,
             KeyBoardCallback keyBoardCallback) {
         this.powerCardCallback = powerCardCallback;
         this.keyBoardCallback = keyBoardCallback;
-        // Using RXTX library, see http://rxtx.qbang.org/wiki/index.php/Download
-        try {
-            SerialPort serialPort = (SerialPort) portId.open("string", 2000);
-            is = serialPort.getInputStream();
-            os = serialPort.getOutputStream();
-            serialPort.addEventListener(this);
-            serialPort.notifyOnDataAvailable(true);
-            int speed = 115200;
-            speed = 9600;
-            serialPort.setSerialPortParams(speed, SerialPort.DATABITS_8,
-                    SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
+        this.os = os;
+        readThread = new Thread(new Runnable() {
 
-    /**
-     * @param args
-     */
-    public static void main(String[] args) {
-        new SerialCommunication(getPortId(), PowerCardCallback.empty,
-                KeyBoardCallback.empty);
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        int numBytes = 0;
+                        numBytes = is.read(buffer, bufferSize, buffer.length
+                                    - bufferSize);
+                        bufferSize += numBytes;
+                        decodeData();
+                    }
+                } catch (IOException e) {
+                    System.out.println(e);
+                }
+            }
+        });
+        readThread.start();
     }
 
     // This could have been a ring buffer.
     byte[] buffer = new byte[100];
     int bufferSize = 0;
-
-    @Override
-    public void serialEvent(SerialPortEvent serialEvent) {
-        switch (serialEvent.getEventType()) {
-        case SerialPortEvent.DATA_AVAILABLE:
-
-            try {
-                int numBytes = 0;
-                if (is.available() > 0) {
-                    numBytes = is.read(buffer, bufferSize, buffer.length
-                            - bufferSize);
-                }
-                bufferSize += numBytes;
-                decodeData();
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-            break;
-        case SerialPortEvent.FE:
-            System.out.println("FE");
-        case SerialPortEvent.PE:
-            System.out.println("PE");
-            break;
-        default:
-            System.out.println("Unknown event:" + serialEvent.getEventType());
-            break;
-        }
-    }
 
     public static final int ZONE_LEFT_FRONT = 0;
     public static final int ZONE_LEFT_BACK = 1;
