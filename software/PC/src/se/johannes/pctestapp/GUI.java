@@ -133,6 +133,7 @@ public class GUI {
         JCheckBox hot = new JCheckBox("Hot");
         JCheckBox present = new JCheckBox("Present");
         int zone;
+        int lastControlValue = 0;
 
         public Zone(int zone) {
             this.zone = zone;
@@ -187,7 +188,11 @@ public class GUI {
         public void stateChanged(ChangeEvent changeEvent) {
             JSlider slider = (JSlider) changeEvent.getSource();
             if (slider != null) {
-                callback.onPowerLevelChanged(zone, slider.getValue());
+                int value = slider.getValue();
+                if (value != lastControlValue) {
+                    callback.onPowerLevelChanged(zone, value);
+                    lastControlValue = value;
+                }
             }
         }
     }

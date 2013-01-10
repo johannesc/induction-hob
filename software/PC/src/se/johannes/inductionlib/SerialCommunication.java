@@ -267,7 +267,7 @@ public class SerialCommunication implements
     static final byte ZONE_HOT_MASK = 0x40;
     static final byte POWER_ACTIVE_MASK = 0x01;
 
-    static final byte POWER_LEVEL_0 = 0x00;
+    public static final byte POWER_LEVEL_0 = 0x00;
     static final byte POWER_LEVEL_U = 0x01;
     static final byte POWER_LEVEL_1 = 0x02;
     static final byte POWER_LEVEL_2 = 0x08;
