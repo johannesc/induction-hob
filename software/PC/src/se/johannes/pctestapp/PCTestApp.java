@@ -2,9 +2,9 @@ package se.johannes.pctestapp;
 
 import javax.swing.SwingUtilities;
 
+import se.johannes.inductionlib.InductionControl;
 import se.johannes.inductionlib.KeyBoardCallback;
 import se.johannes.inductionlib.PowerCardCallback;
-import se.johannes.inductionlib.InductionControl;
 
 // I use the AWT-thread to send data to the induction cooker
 // this is not the best thing to do, but its just a hack anyway...
@@ -24,7 +24,8 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
     private PCTestApp() {
         SerialPortHelper spHelp = new SerialPortHelper();
         com = new InductionControl(spHelp.getInputStream(),
-                spHelp.getOutputStream(), this, KeyBoardCallback.empty);
+                spHelp.getOutputStream(), this, KeyBoardCallback.empty,
+                InductionControl.Role.KEYBOARD);
         gui = new GUI();
         gui.showGUI(this);
     }
@@ -104,17 +105,14 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
     }
 
     @Override
-    public void onPotPresent(boolean[] present, boolean expectAck,
-            byte checksum) {
+    public void onPotPresent(boolean[] present) {
         gui.setPotPresent(present);
-        if (expectAck) {
-            com.sendAckPacket(checksum);
-        }
+
     }
 
     @Override
     public void onPoweredOnCommand(final int powerStatus, boolean[] powered,
-            final boolean[] hot, final boolean expectAck, final byte checksum) {
+            final boolean[] hot) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -126,23 +124,16 @@ public class PCTestApp extends GUI.Callback implements PowerCardCallback {
                     gui.setPowered(true);
                     gui.enablePowerControl(true);
                 }
-                if (expectAck) {
-                    com.sendAckPacket(checksum);
-                }
             }
         });
     }
 
     @Override
-    public void onPowerLimitCommand(final int[] powerLevels,
-            final boolean expectAck, final byte checksum) {
+    public void onPowerLimitCommand(final int[] powerLevels) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 gui.setLimitPower(powerLevels);
-                if (expectAck) {
-                    com.sendAckPacket(checksum);
-                }
             }
         });
     }

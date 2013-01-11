@@ -8,27 +8,39 @@ import java.sql.Timestamp;
 /**
  *
  * This class understands the serial communication for my induction cooker
- * TODO: Make sure we only have one outstanding request at a time and that
- *       it is ack'ed properly (I think that only one outstanding is supported).
- *       Also resend packet if not aced within certain time?
- *
  */
 public class InductionControl {
+
+    public static enum Role {
+        KEYBOARD,  // Act as the keyboard
+        POWERCARD, // Act as the power card
+        PASSIVE    // Act as a passive listener
+    }
 
     private final PowerCardCallback powerCardCallback;
     private final KeyBoardCallback keyBoardCallback;
 
+    // TODO Measure this!
+    private static long MAX_ACK_WAIT_TIME = 100;
+    private static int MAX_RETRIES = 5;
+
+    // Must hold synch lock of "this" before access!
+    private Byte ack = null;
+
     OutputStream os;
     private final Thread readThread;
+    Role role;
 
     public InductionControl(
             final InputStream is,
             final OutputStream os,
             PowerCardCallback powerCardCallback,
-            KeyBoardCallback keyBoardCallback) {
+            KeyBoardCallback keyBoardCallback,
+            Role role) {
         this.powerCardCallback = powerCardCallback;
         this.keyBoardCallback = keyBoardCallback;
         this.os = os;
+        this.role = role;
         readThread = new Thread(new Runnable() {
 
             @Override
@@ -87,7 +99,7 @@ public class InductionControl {
         } else {
             packetData[2] = 0x64;
         }
-        sendPacket(POWER_ON_COMMAND, packetData);
+        sendPacket(POWER_ON_COMMAND, packetData, true);
     }
 
     /**
@@ -102,25 +114,46 @@ public class InductionControl {
         for (int i = 0; i < 4; i++) {
             packetData[i + 2] = powerLevels2Byte[powerLevels[i]];
         }
-        sendPacket(POWER_ON_COMMAND, packetData);
+        sendPacket(POWER_ON_COMMAND, packetData, true);
     }
 
-    private void sendPacket(short command, byte[] packetData) {
+    private synchronized void sendPacket(short command, byte[] packetData,
+            boolean requireAck) {
+        if (ack !=null) {
+            logError("Concurrent use of lib not allowed!");
+            throw new RuntimeException("Concurrent use of lib not allowed!");
+        }
         byte[] packet = new byte[packetData.length + 5];
         packet[0] = (byte) 0xC9;
         packet[1] = (byte) (command >>> 8);
         packet[2] = (byte) (command & 0xFF);
         packet[3] = (byte) packetData.length;
         System.arraycopy(packetData, 0, packet, 4, packetData.length);
-        packet[packet.length - 1] = calculateCheckSum(packet, packet.length);
+        byte checksum = calculateCheckSum(packet, packet.length);
+        packet[packet.length - 1] = checksum;
+        if (requireAck) {
+            ack = checksum;
+        }
         try {
-            os.write(packet);
+            int retries = MAX_RETRIES;
+            do {
+                logDebug("Sending packet.");
+                os.write(packet);
+                this.wait(MAX_ACK_WAIT_TIME);
+            } while ( (ack !=null) && (retries-- > 0) );
+            if (ack != null) {
+                logError("No ack received with checksum " + checksum);
+                // Reset so that we can go on and send more commands
+                ack = null;
+            }
         } catch (IOException e) {
             logDebug(e.toString());
-       }
+        } catch (InterruptedException e) {
+            logError("Interrupted while waiting for ack");
+        }
     }
 
-    public void sendAckPacket(byte checksum) {
+    private void sendAckPacket(byte checksum) {
 //        if (true) {
 //            logDebug("Ack disabled");
 //            return;
@@ -199,13 +232,13 @@ public class InductionControl {
     // C9 2C 44 03 73 03 00 D2
     // C9 44 2C 02 15 02 B4
 
-    static final byte LB_DETECT_MASK = 0x04;
-    static final byte RB_DETECT_MASK = 0x10;
-    static final byte RF_DETECT_MASK = 0x40;
-    static final byte LF_DETECT_MASK = 0X01;
+    private static final byte LB_DETECT_MASK = 0x04;
+    private static final byte RB_DETECT_MASK = 0x10;
+    private static final byte RF_DETECT_MASK = 0x40;
+    private static final byte LF_DETECT_MASK = 0X01;
 
-    static final byte ZONE_HOT_MASK = 0x40;
-    static final byte POWER_ACTIVE_MASK = 0x01;
+    private static final byte ZONE_HOT_MASK = 0x40;
+    private static final byte POWER_ACTIVE_MASK = 0x01;
 
     public static final byte POWER_LEVEL_0 = 0x00;
     static final byte POWER_LEVEL_U = 0x01;
@@ -227,8 +260,11 @@ public class InductionControl {
     String commandString = "";
     String paramString = "";
 
-    // A packet should not take longer than 100ms to receive
-    private static long MAX_PACKET_TIME = 100;
+    // A packet should not take longer than 40ms to receive
+    // @ 9600 bps/s -> 1 start bit + 8 bit data + even parity + 1 stop bit
+    // 9600 / 11 = 873 bytes/s. Largest packet seen is 14 bytes (?) which
+    // then takes 16ms.
+    private static long MAX_PACKET_TIME = 40;
     private long packetStartTs = 0;
 
     private void decodeData() {
@@ -300,17 +336,29 @@ public class InductionControl {
 
                 boolean expectAck = buffer[1] == 0 ? false : true;
 
+                // Send ack packets according to the role of this library
+                // PASSIVE role does not send any ack's
+                if (expectAck) {
+                    if (command == POWER_ON_COMMAND) {
+                        if (role.equals(Role.POWERCARD)) {
+                            sendAckPacket(checksum);
+                        }
+                    } else if (role.equals(Role.KEYBOARD)) {
+                        sendAckPacket(checksum);
+                    }
+                }
+
                 switch (command) {
                 case POWER_ON_COMMAND:
-                    decodePowerOnCommand(expectAck, checksum);
+                    decodePowerOnCommand();
                     break;
                 case POWERED_ON_COMMAND_NO_ACK:
                 case POWERED_ON_COMMAND:
-                    decodePoweredOnCommand(expectAck, checksum);
+                    decodePoweredOnCommand();
                     break;
                 case POT_PRESENT_STATUS_NO_ACK:
                 case POT_PRESENT_STATUS:
-                    decodePotPresentStatus(expectAck, checksum);
+                    decodePotPresentStatus();
                     break;
                default:
                     commandString += " ------------ - -- - UNKNOWN";
@@ -326,14 +374,24 @@ public class InductionControl {
                 return;
             }
 
-            byte checksum = calculateCheckSum(buffer, packetLen);
-            if (buffer[packetLen - 1] != checksum) {
-                logError("Wrong packet checksum!");
-            }
-
             logPacketData(getTs() + getHexString(buffer, 0, packetLen));
             logDebug(getTs() + "ACK of package with checksum = "
                     + String.format("%02X", buffer[1]));
+
+            byte checksum = calculateCheckSum(buffer, packetLen);
+            if (buffer[packetLen - 1] != checksum) {
+                logError("Wrong packet checksum in ack packet!");
+            } else {
+                synchronized(this) {
+                    if (ack != null) {
+                        if (ack.equals(buffer[1])) {
+                            ack = null;
+                            this.notifyAll();
+                            logDebug("Acked that we wait for received");
+                        }
+                    }
+                }
+            }
         } else {
             // As long as the scan for packet start remains above
             // this should never execute.
@@ -349,7 +407,7 @@ public class InductionControl {
         }
     }
 
-    private void decodePotPresentStatus(boolean expectAck, byte checksum) {
+    private void decodePotPresentStatus() {
         commandString += "<-(POT_PRESENT_STATUS)";
         // C9 2C 47 04 54 03 55 3C 98
         // 0  1  2  3  4  5  6  7  8
@@ -376,13 +434,13 @@ public class InductionControl {
                 paramString += "RF ";
                 present[3] = true;
             }
-            powerCardCallback.onPotPresent(present, expectAck, checksum);
+            powerCardCallback.onPotPresent(present);
         } else {
             paramString = "Unknown POT_PRESENT_STATUS params!";
         }
     }
 
-    private void decodePoweredOnCommand(boolean expectAck, byte checksum) {
+    private void decodePoweredOnCommand() {
         // Also seen, don't know what they mean:
         // C9 2C 44 03 73 03 00 D2
         // C9 2C 44 03 73 03 02 D0
@@ -444,7 +502,7 @@ public class InductionControl {
             }
 
             powerCardCallback.onPoweredOnCommand(powerStatus, powered,
-                    hot, expectAck, checksum);
+                    hot);
         } else if (buffer[4] == (byte) 0x18) {
             paramString = " (PLIMIT)"; // Power limited
             paramString += " LF LB RB RF:" + getHexString(buffer, 6, 4);
@@ -453,18 +511,12 @@ public class InductionControl {
             for (int i = 0; i < levels.length; i++) {
                 levels[i] = getPowerLevelFromByte(buffer[i + 6]);
             }
-            powerCardCallback.onPowerLimitCommand(levels, expectAck, checksum);
+            powerCardCallback.onPowerLimitCommand(levels);
         } else if (buffer[4] == (byte) 0x73) {
             // Example of packages:
             // C9 2C 44 03 73 03 00 D2
             // C9 2C 44 03 73 03 02 D0
             paramString = " --------Unknown packet that has been seen before";
-
-            if (expectAck) {
-                // Lets send an ack...
-                // TODO inconsistent behaviour... Client should send ack?
-                sendAckPacket(checksum);
-            }
         } else {
             paramString = " -------------------UNKNOWN!:" +
                     String.format("%02X", buffer[4]);
@@ -472,19 +524,17 @@ public class InductionControl {
         }
     }
 
-    private void decodePowerOnCommand(boolean expectAck, byte checksum) {
+    private void decodePowerOnCommand() {
         commandString += "->(PWR)";
         if (buffer[4] == (byte) 0xC0) {
             // C9 44 2C 03 C0 00 63 01
             paramString += " MPWR";
             if (buffer[6] == 0x64) {
                 paramString += " OFF";
-                keyBoardCallback.onSetMainPowerCommand(false, expectAck,
-                        checksum);
+                keyBoardCallback.onSetMainPowerCommand(false);
             } else if (buffer[6] == (byte) 0x63) {
                 paramString += " ON";
-                keyBoardCallback.onSetMainPowerCommand(true, expectAck,
-                        checksum);
+                keyBoardCallback.onSetMainPowerCommand(true);
             } else {
                 paramString += " --------------------UNKNOWN!!!-------";
                 keyBoardCallback.onUnknownData();
@@ -501,7 +551,7 @@ public class InductionControl {
             for (int i = 0; i < powerLevels.length; i++) {
                 powerLevels[i] = getPowerLevelFromByte(buffer[i + 6]);
             }
-            keyBoardCallback.onPowerOnCommand(powerLevels, expectAck, checksum);
+            keyBoardCallback.onPowerOnCommand(powerLevels);
         } else {
             paramString = "          --- UNKNOWN ---";
             keyBoardCallback.onUnknownData();
