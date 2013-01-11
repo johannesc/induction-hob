@@ -8,7 +8,9 @@ import java.sql.Timestamp;
 /**
  *
  * This class understands the serial communication for my induction cooker
- * TODO: Remove debug prints or make them possible to turn off.
+ * TODO: Make sure we only have one outstanding request at a time and that
+ *       it is ack'ed properly (I think that only one outstanding is supported).
+ *       Also resend packet if not aced within certain time?
  *
  */
 public class InductionControl {
@@ -40,7 +42,8 @@ public class InductionControl {
                         decodeData();
                     }
                 } catch (IOException e) {
-                    System.out.println(e);
+                    // Will happen when is is closed
+                    logDebug(e.toString());
                 }
             }
         });
@@ -113,25 +116,23 @@ public class InductionControl {
         try {
             os.write(packet);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+            logDebug(e.toString());
+       }
     }
 
     public void sendAckPacket(byte checksum) {
 //        if (true) {
-//            System.out.println("Ack disabled");
+//            logDebug("Ack disabled");
 //            return;
 //        }
-        System.out.println("Sending ack packet:"
+        logDebug("Sending ack packet:"
                 + String.format("%02X ", checksum));
         byte[] packet = {PACKET_TYPE_ACK, checksum ,0};
         packet[2] = calculateCheckSum(packet, 3);
         try {
             os.write(packet);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logDebug(e.toString());
         }
     }
 
@@ -226,6 +227,10 @@ public class InductionControl {
     String commandString = "";
     String paramString = "";
 
+    // A packet should not take longer than 100ms to receive
+    private static long MAX_PACKET_TIME = 100;
+    private long packetStartTs = 0;
+
     private void decodeData() {
         // Start patterns:
         // 0x9C packet with length at index 3 (minus checksum)
@@ -244,7 +249,7 @@ public class InductionControl {
                     || (buffer[i] == PACKET_TYPE_COMMAND)) {
                 packetFound = true;
                 if (i != 0) {
-                    System.out.println("Hmm, packet not at start?");
+                    logDebug("Hmm, packet not at start?");
                     // remove crap data, packet should start at index 0
                     System.arraycopy(buffer, i, buffer, 0, bufferSize - i);
                     bufferSize -= i;
@@ -253,28 +258,40 @@ public class InductionControl {
             }
         }
         if (!packetFound) {
-            System.out.println("No packet found, clearing buffer");
+            logDebug("No packet found, clearing buffer");
             bufferSize = 0;
+            packetStartTs = 0;
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (packetStartTs == 0) {
+            packetStartTs = now;
+        } else if ((now - packetStartTs) > MAX_PACKET_TIME) {
+            logDebug("Packet time too long (" + (now - packetStartTs) +
+                    "ms), reset buffer");
+            bufferSize = 0;
+            packetStartTs = 0;
             return;
         }
 
         int packetLen = 0;
         if (buffer[0] == PACKET_TYPE_COMMAND) {
-            // System.out.println("Command package");
             if (bufferSize < 6) {
-                // System.out.println("Need more data");
+                // Complete packet not yet received
                 return;
             }
             packetLen = buffer[3] + 5;
             if (bufferSize < packetLen) {
-                // System.out.println("Incomplete expected=" + packetLen +
-                // " got " + bufferSize);
+                // Complete packet not yet received
                 return;
             }
 
+            // Complete package received
+            logPacketData(getTs() + getHexString(buffer, 0, packetLen));
+
             byte checksum = calculateCheckSum(buffer, packetLen);
             if (buffer[packetLen - 1] != checksum) {
-                System.err.println("Wrong packet checksum!");
+                logError("Wrong packet checksum!");
             } else {
 
                 short command = (short) ((buffer[1] << 8) | (buffer[2] & 0xFF));
@@ -299,41 +316,32 @@ public class InductionControl {
                     commandString += " ------------ - -- - UNKNOWN";
                     break;
                 }
-                System.out
-                        .println(getTs() + getHexString(buffer, 0, packetLen));
-                System.err.println(getTs() + "COMMAND cmd=" + commandString
+                logDebug(getTs() + "COMMAND cmd=" + commandString
                         + paramString);
-                System.err.println();
             }
         } else if (buffer[0] == PACKET_TYPE_ACK) {
             packetLen = 3; // including checksum
             if (bufferSize < packetLen) {
-                // System.out.println("Incomplete expected=" + packetLen +
-                // " got " + bufferSize);
+                // Packet not yet fully received
                 return;
             }
 
             byte checksum = calculateCheckSum(buffer, packetLen);
             if (buffer[packetLen - 1] != checksum) {
-                System.err.println("Wrong packet checksum!");
+                logError("Wrong packet checksum!");
             }
 
-            String checksumString = String.format("%02X", buffer[1]);
-            System.out.println(getTs() + getHexString(buffer, 0, packetLen));
-            System.err.println(getTs() + "ACK of package with checksum = "
-                    + checksumString);
-            System.err.println();
+            logPacketData(getTs() + getHexString(buffer, 0, packetLen));
+            logDebug(getTs() + "ACK of package with checksum = "
+                    + String.format("%02X", buffer[1]));
         } else {
-            System.err.println(new Timestamp(System.currentTimeMillis())
-                    .toString()
-                    + getHexString(buffer, 0, packetLen)
-                    + "Unknown package: " + buffer[0] + " sz=" + bufferSize);
-            bufferSize = 0;
-            // Hmm, should never come here..
-            return;
+            // As long as the scan for packet start remains above
+            // this should never execute.
+            throw new RuntimeException("Wierd code path");
         }
 
         // Throw away packet from buffer.
+        packetStartTs = 0;
         System.arraycopy(buffer, packetLen, buffer, 0, bufferSize - packetLen);
         bufferSize -= packetLen;
         if (bufferSize != 0) {
@@ -450,10 +458,11 @@ public class InductionControl {
             // Example of packages:
             // C9 2C 44 03 73 03 00 D2
             // C9 2C 44 03 73 03 02 D0
-            System.out.println("------------------------------" +
-                        "Unknown packet that has been seen before");
+            paramString = " --------Unknown packet that has been seen before";
+
             if (expectAck) {
                 // Lets send an ack...
+                // TODO inconsistent behaviour... Client should send ack?
                 sendAckPacket(checksum);
             }
         } else {
@@ -505,6 +514,18 @@ public class InductionControl {
             checkSum = (byte) (checkSum ^ packet[i]);
         }
         return checkSum;
+    }
+
+    private void logPacketData(String line) {
+        System.out.println(line);
+    }
+
+    private void logDebug(String line) {
+        System.out.println(line);
+    }
+
+    private void logError(String line) {
+        System.err.println(line);
     }
 
     private String getTs() {
