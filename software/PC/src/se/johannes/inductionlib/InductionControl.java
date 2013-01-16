@@ -232,10 +232,10 @@ public class InductionControl {
     // C9 2C 44 03 73 03 00 D2
     // C9 44 2C 02 15 02 B4
 
+    private static final byte LF_DETECT_MASK = 0X01;
     private static final byte LB_DETECT_MASK = 0x04;
     private static final byte RB_DETECT_MASK = 0x10;
     private static final byte RF_DETECT_MASK = 0x40;
-    private static final byte LF_DETECT_MASK = 0X01;
 
     private static final byte ZONE_HOT_MASK = 0x40;
     private static final byte POWER_ACTIVE_MASK = 0x01;
@@ -420,19 +420,19 @@ public class InductionControl {
             byte presentMask = buffer[6];
             if ((presentMask & LF_DETECT_MASK) != 0) {
                 paramString += "LF ";
-                present[0] = true;
+                present[ZONE_LEFT_FRONT] = true;
             }
             if ((presentMask & LB_DETECT_MASK) != 0) {
                 paramString += "LB ";
-                present[1] = true;
+                present[ZONE_LEFT_BACK] = true;
             }
             if ((presentMask & RB_DETECT_MASK) != 0) {
                 paramString += "RB ";
-                present[2] = true;
+                present[ZONE_RIGHT_BACK] = true;
             }
             if ((presentMask & RF_DETECT_MASK) != 0) {
                 paramString += "RF ";
-                present[3] = true;
+                present[ZONE_RIGHT_FRONT] = true;
             }
             powerCardCallback.onPotPresent(present);
         } else {
