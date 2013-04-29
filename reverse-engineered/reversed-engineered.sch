@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 13 Dec 2012 01:05:19 PM CET
+EESchema Schematic File Version 2  date Mon 29 Apr 2013 10:24:02 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -29,7 +29,6 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
-LIBS:kicad-components
 LIBS:reversed-engineered-cache
 EELAYER 25  0
 EELAYER END
@@ -37,7 +36,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 1 6
 Title ""
-Date "13 dec 2012"
+Date "29 apr 2013"
 Rev ""
 Comp ""
 Comment1 ""
@@ -45,8 +44,6 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Label 9500 2200 0    60   ~ 0
-Protective Earth
 Wire Wire Line
 	9250 2200 10250 2200
 Wire Wire Line
@@ -125,6 +122,8 @@ Wire Wire Line
 	9250 1750 10250 1750
 Wire Wire Line
 	9250 2050 10250 2050
+Text Label 9500 2200 0    60   ~ 0
+Protective Earth
 Text Label 9900 1750 0    60   ~ 0
 L2 230v
 Text Label 9900 1900 0    60   ~ 0

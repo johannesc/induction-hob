@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 13 Dec 2012 01:05:19 PM CET
+EESchema Schematic File Version 2  date Mon 29 Apr 2013 10:24:02 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -29,7 +29,6 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
-LIBS:kicad-components
 LIBS:reversed-engineered-cache
 EELAYER 25  0
 EELAYER END
@@ -37,7 +36,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 4 6
 Title ""
-Date "13 dec 2012"
+Date "29 apr 2013"
 Rev ""
 Comp ""
 Comment1 ""
@@ -45,8 +44,25 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Label 4900 3300 0    60   ~ 0
-AION0
+Text Notes 2600 7500 0    60   ~ 0
+PIN#8 (SHCP) 180kHz (pulses)
+Text Notes 2600 7350 0    60   ~ 0
+PIN#4  0-0.5v?
+Text Notes 2600 7200 0    60   ~ 0
+PIN#7 = 0v??? Connection problem?
+Text Notes 2600 7050 0    60   ~ 0
+PIN#5 (STCP) = 190Hz (low pulse)
+Text Notes 6050 5650 0    60   ~ 0
+4
+Wire Wire Line
+	6050 5650 6050 6000
+Wire Wire Line
+	6050 6000 5550 6000
+Connection ~ 5650 5800
+Wire Wire Line
+	5650 5800 5900 5800
+Wire Wire Line
+	5900 5800 5900 5650
 Wire Wire Line
 	4950 2350 4800 2350
 Wire Wire Line
@@ -116,6 +132,29 @@ Wire Wire Line
 Connection ~ 5250 1600
 Wire Wire Line
 	6850 3850 6850 3950
+Wire Notes Line
+	6400 5650 6400 5350
+Wire Notes Line
+	6400 5650 5750 5650
+Wire Notes Line
+	5750 5650 5750 5350
+Wire Notes Line
+	5750 5350 6400 5350
+Wire Wire Line
+	5550 6500 5550 6600
+$Comp
+L R R?
+U 1 1 517EC305
+P 5550 6250
+F 0 "R?" V 5450 6250 50  0000 C CNN
+F 1 "2k2" V 5550 6250 50  0000 C CNN
+	1    5550 6250
+	1    0    0    -1  
+$EndComp
+Text Notes 5900 5650 0    60   ~ 0
+3
+Text Label 4900 3300 0    60   ~ 0
+AION0
 $Comp
 L R R?
 U 1 1 50C9C1BB
