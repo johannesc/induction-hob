@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 09 Jun 2013 09:52:20 PM CEST
+EESchema Schematic File Version 2  date Fri 14 Jun 2013 12:48:07 PM CEST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -36,7 +36,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "9 jun 2013"
+Date "14 jun 2013"
 Rev ""
 Comp ""
 Comment1 ""
@@ -44,13 +44,8 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Notes 800  2350 0    60   ~ 0
-Keyboard to control card connector
-Text Notes 550  600  0    60   ~ 0
-Keyboard to keyboard cable connector
-Connection ~ 6100 2000
 Wire Wire Line
-	6100 2000 6100 3500
+	6100 2300 6100 3500
 Wire Wire Line
 	1500 3500 1500 3650
 Wire Wire Line
@@ -69,21 +64,13 @@ Wire Wire Line
 	5100 2250 4450 2250
 Connection ~ 6400 1150
 Wire Wire Line
-	6400 1150 5900 1150
-Wire Wire Line
-	5900 1150 5400 1150
-Wire Wire Line
-	5400 1150 4850 1150
+	6400 1150 4850 1150
 Connection ~ 5900 1150
 Wire Wire Line
 	4850 1700 4850 1800
 Connection ~ 5400 2850
 Wire Wire Line
-	6400 2850 5900 2850
-Wire Wire Line
-	5900 2850 5400 2850
-Wire Wire Line
-	5400 2850 4850 2850
+	6400 2850 4850 2850
 Wire Wire Line
 	4850 2850 4850 2200
 Wire Wire Line
@@ -93,9 +80,7 @@ Wire Wire Line
 	5900 2850 5900 2750
 Connection ~ 5900 2300
 Wire Wire Line
-	6400 3250 6400 2850
-Wire Wire Line
-	6400 2850 6400 2400
+	6400 3250 6400 2400
 Wire Wire Line
 	6400 2400 6600 2400
 Wire Wire Line
@@ -109,9 +94,7 @@ Wire Wire Line
 Wire Wire Line
 	1500 850  1350 850 
 Wire Wire Line
-	1500 1950 1500 1750
-Wire Wire Line
-	1500 1750 1500 1650
+	1500 1950 1500 1650
 Wire Wire Line
 	1500 1650 1350 1650
 Wire Wire Line
@@ -125,9 +108,7 @@ Wire Wire Line
 Wire Wire Line
 	6250 5200 6250 5300
 Wire Wire Line
-	6250 4650 6250 4750
-Wire Wire Line
-	6250 4750 6250 4800
+	6250 4800 6250 4650
 Wire Wire Line
 	5850 5000 5950 5000
 Connection ~ 6250 4750
@@ -147,9 +128,7 @@ Wire Wire Line
 Wire Wire Line
 	1500 2700 1500 2900
 Wire Wire Line
-	6400 1050 6400 1150
-Wire Wire Line
-	6400 1150 6400 2100
+	6400 1050 6400 2100
 Wire Wire Line
 	6400 2100 6600 2100
 Wire Wire Line
@@ -157,24 +136,18 @@ Wire Wire Line
 Wire Wire Line
 	5900 1150 5900 1200
 Wire Wire Line
-	6600 2000 6100 2000
-Wire Wire Line
-	6100 2000 5400 2000
+	5400 2000 6600 2000
 Wire Wire Line
 	5400 2450 5400 2850
 Connection ~ 5900 2850
 Wire Wire Line
-	5900 1700 5900 2300
-Wire Wire Line
-	5900 2300 5900 2350
+	5900 2350 5900 1700
 Wire Wire Line
 	5400 1200 5400 1150
 Wire Wire Line
 	4850 1150 4850 1200
 Wire Wire Line
-	5400 1700 5400 2000
-Wire Wire Line
-	5400 2000 5400 2050
+	5400 2050 5400 1700
 Connection ~ 5400 2000
 Connection ~ 5400 1150
 Wire Wire Line
@@ -188,13 +161,18 @@ Wire Wire Line
 Wire Wire Line
 	8000 2000 8950 2000
 Wire Wire Line
-	8950 3500 6100 3500
+	6100 3500 8950 3500
 Wire Wire Line
 	1350 3850 1500 3850
 Wire Wire Line
 	1500 3850 1500 3950
 Wire Wire Line
 	6950 4750 7550 4750
+Connection ~ 6100 2300
+Text Notes 800  2350 0    60   ~ 0
+Keyboard to control card connector
+Text Notes 550  600  0    60   ~ 0
+Keyboard to keyboard cable connector
 $Comp
 L R R?
 U 1 1 51B4DACF
@@ -237,7 +215,7 @@ NoConn ~ 1350 2500
 Text Label 2200 2600 0    60   ~ 0
 IOIO_PIN1
 Text Label 8450 3500 0    60   ~ 0
-IOIO_PIN18
+IOIO_PIN14
 Text Label 8450 2100 0    60   ~ 0
 IOIO_PIN10
 Text Label 8450 2000 0    60   ~ 0
