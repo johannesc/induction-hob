@@ -1,4 +1,4 @@
-package se.johannes.inductionlib;
+package inductionlib;
 
 /**
  *

@@ -1,4 +1,5 @@
-package se.johannes.pctestapp;
+package pctestapp;
+
 
 import java.awt.BorderLayout;
 import java.awt.Color;

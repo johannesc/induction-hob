@@ -1,4 +1,4 @@
-package se.johannes.pctestapp;
+package pctestapp;
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;

@@ -1,10 +1,10 @@
-package se.johannes.pctestapp;
+package pctestapp;
+
+import inductionlib.InductionControl;
+import inductionlib.KeyBoardCallback;
+import inductionlib.PowerCardCallback;
 
 import javax.swing.SwingUtilities;
-
-import se.johannes.inductionlib.InductionControl;
-import se.johannes.inductionlib.KeyBoardCallback;
-import se.johannes.inductionlib.PowerCardCallback;
 
 // I use the AWT-thread to send data to the induction cooker
 // this is not the best thing to do, but its just a hack anyway...

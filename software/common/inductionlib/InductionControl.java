@@ -1,4 +1,4 @@
-package se.johannes.inductionlib;
+package inductionlib;
 
 import java.io.IOException;
 import java.io.InputStream;
