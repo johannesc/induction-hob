@@ -548,7 +548,7 @@ public class InductionControl {
             //             | right inner
             //                | right front
             paramString = " FL BL BR FR:" + getHexString(buffer, 6, 4);
-            int[] powerLevels = new int[3];
+            int[] powerLevels = new int[4];
             for (int i = 0; i < powerLevels.length; i++) {
                 powerLevels[i] = getPowerLevelFromByte(buffer[i + 6]);
             }
