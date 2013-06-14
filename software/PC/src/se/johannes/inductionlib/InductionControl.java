@@ -263,8 +263,9 @@ public class InductionControl {
     // A packet should not take longer than 40ms to receive
     // @ 9600 bps/s -> 1 start bit + 8 bit data + even parity + 1 stop bit
     // 9600 / 11 = 873 bytes/s. Largest packet seen is 14 bytes (?) which
-    // then takes 16ms.
-    private static long MAX_PACKET_TIME = 40;
+    // then takes 16ms. But running over BT it seems to take longer, so lets increase it
+    // a bit.
+    private static long MAX_PACKET_TIME = 300;
     private long packetStartTs = 0;
 
     private void decodeData() {
