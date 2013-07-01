@@ -6,6 +6,8 @@ import inductionlib.KeyBoardCallback;
 import inductionlib.PowerCardCallback;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.Induction;
+import ioio.lib.api.Induction.ButtonMaskChangedEvent;
+import ioio.lib.api.Induction.InductionEvent;
 import ioio.lib.api.Uart;
 import ioio.lib.api.Uart.Parity;
 import ioio.lib.api.Uart.StopBits;
@@ -48,8 +50,8 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
     }
 
     public static void main(String[] args) throws Exception {
-        System.setProperty("ioio.SerialPorts", "/dev/rfcomm0");
-        //System.setProperty("ioio.SerialPorts", "/dev/ttyACM0");
+        //System.setProperty("ioio.SerialPorts", "/dev/rfcomm0");
+        System.setProperty("ioio.SerialPorts", "/dev/ttyACM0");
         new PCTestApp().go(args);
     }
 
@@ -111,6 +113,7 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
                 KeyBoardCallback keyboardCardCallback = new KeyBoardCallbackImpl();
                 new InductionControl(uart.getInputStream(),
                         null, powerCardCallback, keyboardCardCallback, Role.PASSIVE);
+                new java.lang.Thread(new InductionKeyboardChecker(induction)).start();
             }
 
             @Override
@@ -216,6 +219,40 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
         @Override
         public void onUnknownData() {
             System.out.println("onUnknownData");
+        }
+    }
+
+    private class InductionKeyboardChecker implements Runnable {
+
+        private final Induction induction;
+
+		public InductionKeyboardChecker(Induction induction) {
+            this.induction = induction;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    InductionEvent event = induction.readEvent();
+                    System.out.println("Got event:" + event);
+                    if (event instanceof ButtonMaskChangedEvent) {
+                        ButtonMaskChangedEvent butChangedEvent = (ButtonMaskChangedEvent) event;
+                        System.out.println("ButtonMaskChangedEvent:" +
+                            Integer.toHexString(butChangedEvent.getButtonMask()));
+                    } else if (event instanceof Induction.UserReleasedEvent) {
+                        System.out.println("UserReleasedEvent");
+                    } else if (event instanceof Induction.UserPressedEvent) {
+                        System.out.println("UserPressedEvent");
+                    }
+                } catch (ConnectionLostException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }
