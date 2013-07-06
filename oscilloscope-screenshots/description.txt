@@ -5,3 +5,4 @@ normal.bmp = Finger away from LED/IR
 
 pressed.bmp = Finger close to LED/IR
 
+all = some background light and also looking at all sensors, triggering at first (=power on/off)
