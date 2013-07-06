@@ -86,7 +86,7 @@ public class GUI {
     }
 
     public void setPotPresent(boolean[] potPresent) {
-        System.out.println("setPotpres..");
+        //System.out.println("setPotpres..");
         for (int i = 0; i < potPresent.length; i++) {
             zones[i].setPotPresent(potPresent[i]);
         }

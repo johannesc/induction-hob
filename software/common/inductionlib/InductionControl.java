@@ -51,6 +51,7 @@ public class InductionControl {
                         numBytes = is.read(buffer, bufferSize, buffer.length
                                     - bufferSize);
                         bufferSize += numBytes;
+                        //System.out.println("Read " + numBytes + " bufferSize=" + bufferSize);
                         decodeData();
                     }
                 } catch (IOException e) {
@@ -292,6 +293,8 @@ public class InductionControl {
                     bufferSize -= i;
                 }
                 break;
+            } else {
+                System.out.println("Buffer 0x" + Integer.toHexString(buffer[i]));
             }
         }
         if (!packetFound) {
@@ -568,11 +571,11 @@ public class InductionControl {
     }
 
     private void logPacketData(String line) {
-        System.out.println(line);
+        //System.out.println(line);
     }
 
     private void logDebug(String line) {
-        System.out.println(line);
+        //System.out.println(line);
     }
 
     private void logError(String line) {

@@ -86,7 +86,7 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
             System.out.println("Updating button mask to " + Integer.toHexString(localButtonMask));
             buttonMask = localButtonMask;
         } else {
-            System.out.println("No change in button mask");
+            System.out.println("No change in button mask (" + Integer.toHexString(buttonMask) + ")");
         }
     }
 
@@ -141,10 +141,11 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
         @Override
         public void onPotPresent(boolean[] present) {
             //Pot presence only works when the power is > 0
-            System.out.println("onPotPresent");
+            System.out.print("onPotPresent: ");
             for (boolean b : present) {
-                System.out.println(b);
+                System.out.print(b + " ");
             }
+            System.out.println();
             gui.setPotPresent(present);
         }
 
@@ -200,10 +201,10 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
 
         @Override
         public void onPowerOnCommand(int[] powerLevels) {
-            System.out.println("onPowerOnCommand");
-            for (int powerLevel : powerLevels) {
-                System.out.println("powerLevel:" + powerLevel);
-            }
+            //System.out.println("onPowerOnCommand");
+            //for (int powerLevel : powerLevels) {
+            //    System.out.println("powerLevel:" + powerLevel);
+            //}
             inductionState.powerLevels = powerLevels;
             //TODO Change name and figure out how to handle when power is limited
             gui.setLimitPower(powerLevels);
@@ -235,15 +236,16 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
             while (true) {
                 try {
                     InductionEvent event = induction.readEvent();
-                    System.out.println("Got event:" + event);
                     if (event instanceof ButtonMaskChangedEvent) {
                         ButtonMaskChangedEvent butChangedEvent = (ButtonMaskChangedEvent) event;
                         System.out.println("ButtonMaskChangedEvent:" +
-                            Integer.toHexString(butChangedEvent.getButtonMask()));
+                            Integer.toHexString(butChangedEvent.getButtonMask() & 0xFFFF));
                     } else if (event instanceof Induction.UserReleasedEvent) {
                         System.out.println("UserReleasedEvent");
                     } else if (event instanceof Induction.UserPressedEvent) {
                         System.out.println("UserPressedEvent");
+                    } else {
+                        System.out.println("Got unknown event:" + event);
                     }
                 } catch (ConnectionLostException e) {
                     // TODO Auto-generated catch block
