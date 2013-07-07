@@ -320,7 +320,7 @@ public class InductionControl {
                 // Complete packet not yet received
                 return;
             }
-            packetLen = buffer[3] + 5;
+            packetLen = (buffer[3] & 0xFF) + 5;
             if (bufferSize < packetLen) {
                 // Complete packet not yet received
                 return;

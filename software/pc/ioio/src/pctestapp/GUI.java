@@ -98,13 +98,13 @@ public class GUI {
         }
     }
 
-    public void setLimitPower(int[] values) {
+    public void setActualPowerLevels(int[] values) {
         for (int i = 0; i < values.length; i++) {
             zones[i].setLimitPower(values[i]);
         }
     }
 
-    public void setPower(int[] values) {
+    public void setTargetPower(int[] values) {
         for (int i = 0; i < values.length; i++) {
             zones[i].setPower(values[i]);
         }

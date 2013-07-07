@@ -18,36 +18,12 @@ import ioio.lib.util.pc.IOIOConsoleApp;
 
 import javax.swing.SwingUtilities;
 
+import control.InductionHob;
+
 public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
-    private static final short[] ZONE_TO_PLUS_MASK = new short[4];
-    private static final short[] ZONE_TO_MINUS_MASK = new short[4];
-    private final InductionState inductionState = new InductionState();
-    private final TargetState targetState = new TargetState();
+    private final InductionHob inductionHob = new InductionHob();
 
     private GUI gui;
-    private short buttonMask = 0x0000;
-    private boolean firstPowerStateReceived = false;
-
-    static {
-        ZONE_TO_PLUS_MASK[InductionControl.ZONE_LEFT_FRONT] = 0x2000;
-        ZONE_TO_PLUS_MASK[InductionControl.ZONE_LEFT_BACK] = 0x0800;
-        ZONE_TO_PLUS_MASK[InductionControl.ZONE_RIGHT_BACK] = 0x1000;
-        ZONE_TO_PLUS_MASK[InductionControl.ZONE_RIGHT_FRONT] = 0x0040;
-
-        ZONE_TO_MINUS_MASK[InductionControl.ZONE_LEFT_FRONT] = (short)0x8000;
-        ZONE_TO_MINUS_MASK[InductionControl.ZONE_LEFT_BACK] = 0x0008;
-        ZONE_TO_MINUS_MASK[InductionControl.ZONE_RIGHT_BACK] = 0x0010;
-        ZONE_TO_MINUS_MASK[InductionControl.ZONE_RIGHT_FRONT] = 0x0400;
-    }
-
-    private class InductionState {
-        int[] powerLevels = new int[4];
-        boolean powered;
-    }
-
-    private class TargetState {
-        int[] powerLevels = new int[4];
-    }
 
     public static void main(String[] args) throws Exception {
         //System.setProperty("ioio.SerialPorts", "/dev/rfcomm0");
@@ -63,39 +39,10 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
         Thread.sleep(7200000);
     }
 
-    private void updateKeyBoard() {
-        short localButtonMask = 0;
-        for(int i=0;i<4;i++) {
-            int target = targetState.powerLevels[i];
-            int current = inductionState.powerLevels[i];
-            if (target > current) {
-                System.out.println("Need plus for zone " + i);
-                localButtonMask |= ZONE_TO_PLUS_MASK[i];
-            } else if (target < current) {
-                System.out.println("Need minus for zone " + i);
-                localButtonMask |= ZONE_TO_MINUS_MASK[i];
-            } else {
-                System.out.println("Target reached for zone " + i);
-            }
-        }
-        if (!inductionState.powered) {
-            System.out.println("Not powered on, use zero mask");
-            localButtonMask = 0;
-        }
-        if (localButtonMask != buttonMask) {
-            System.out.println("Updating button mask to " + Integer.toHexString(localButtonMask));
-            buttonMask = localButtonMask;
-        } else {
-            System.out.println("No change in button mask (" + Integer.toHexString(buttonMask) + ")");
-        }
-    }
-
     //From GUI!
     @Override
     public void onPowerLevelChanged(int zone, int powerLevel) {
-        System.out.println("Changing target powerlevels in zone " + zone + " to " + powerLevel);
-        targetState.powerLevels[zone] = powerLevel;
-        updateKeyBoard();
+        inductionHob.setTargetPowerLevel(zone, powerLevel);
     }
 
     @Override
@@ -113,12 +60,14 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
                 KeyBoardCallback keyboardCardCallback = new KeyBoardCallbackImpl();
                 new InductionControl(uart.getInputStream(),
                         null, powerCardCallback, keyboardCardCallback, Role.PASSIVE);
-                new java.lang.Thread(new InductionKeyboardChecker(induction)).start();
             }
 
             @Override
             public void loop() throws ConnectionLostException, InterruptedException {
+                readInductionEvents();
+                short buttonMask = inductionHob.getButtonMask();
                 if (lastMask != buttonMask ) {
+                    System.out.println("Setting mask to: " + Integer.toHexString(buttonMask));
                     induction.setInductionButtonMask(buttonMask);
                     lastMask = buttonMask;
                 }
@@ -134,6 +83,36 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
             public void disconnected() {
                 System.out.println("Disconnected!");
             }
+
+            private void readInductionEvents() {
+                try {
+                    while (induction.getEventCount() > 0) {
+                        InductionEvent event = induction.readEvent();
+                        if (event instanceof ButtonMaskChangedEvent) {
+                            ButtonMaskChangedEvent butChangedEvent = (ButtonMaskChangedEvent) event;
+                            boolean userPressed = butChangedEvent.getUserPressed();
+                            short buttonMask = butChangedEvent.getButtonMask();
+                            System.out.println("ButtonMaskChangedEvent:" +
+                                Integer.toHexString(buttonMask & 0xFFFF) +
+                                " userPressed = " + userPressed);
+                            if (userPressed) {
+                                // This means that the firmware has changed the mask to 0
+                                lastMask = 0;
+                                System.out.println("Firmware has cleared our mask, lets do the same");
+                            }
+                            inductionHob.reportActualButtonMask(buttonMask, userPressed);
+                        } else {
+                            System.out.println("Got unknown event:" + event);
+                        }
+                    }
+                } catch (ConnectionLostException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
         };
     }
 
@@ -141,56 +120,51 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
         @Override
         public void onPotPresent(boolean[] present) {
             //Pot presence only works when the power is > 0
-            System.out.print("onPotPresent: ");
-            for (boolean b : present) {
-                System.out.print(b + " ");
-            }
-            System.out.println();
-            gui.setPotPresent(present);
+            inductionHob.setPotPresent(present);
+            updateGui();
         }
 
         @Override
         public void onPoweredOnCommand(final int powerStatus, boolean[] powered,
                 final boolean[] hot) {
             System.out.println("onPoweredOnCommand:" + powerStatus);
-            for (int i = 0; i < hot.length; i++) {
-                boolean hotVal = hot[i];
-                boolean poweredVal = powered[i];
-                System.out.println("hotVal=" + hotVal + " poweredVal=" + poweredVal);
-            }
-            inductionState.powered = powerStatus != InductionControl.POWERSTATUS_OFF;
-
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    gui.setPotHot(hot);
-                    if (powerStatus == InductionControl.POWERSTATUS_OFF) {
-                        gui.setPowered(false);
-                        gui.enablePowerControl(false);
-                    } else {
-                        gui.setPowered(true);
-                        gui.enablePowerControl(true);
-                    }
-                }
-            });
+            inductionHob.setCurrentPowerStatus(powerStatus);
+            inductionHob.setCurrentPowerStatus(powered);
+            inductionHob.setCurrentHotStatus(hot);
+            updateGui();
         }
 
         @Override
         public void onPowerLimitCommand(final int[] powerLevels) {
             System.out.println("onPowerLimitCommand");
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    //TODO verify
-                    gui.setLimitPower(powerLevels);
-                }
-            });
+            //TODO implement! How is this command sent when the limit is "removed"?
         }
 
         @Override
         public void onUnknownData() {
             System.out.println("onUnknownData");
         }
+    }
+
+    public void updateGui() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Updating UI");
+                gui.setPotHot(inductionHob.getHot());
+
+                if (inductionHob.isPowered()) {
+                    gui.setPowered(true);
+                    gui.enablePowerControl(true);
+                } else {
+                    gui.setPowered(false);
+                    gui.enablePowerControl(false);
+                }
+                gui.setActualPowerLevels(inductionHob.getCurrenPowerLevels());
+                gui.setTargetPower(inductionHob.getTargetPowerLevels());
+                gui.setPotPresent(inductionHob.getPotPresent());
+            }
+        });
     }
 
     private class KeyBoardCallbackImpl implements KeyBoardCallback {
@@ -205,56 +179,13 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
             //for (int powerLevel : powerLevels) {
             //    System.out.println("powerLevel:" + powerLevel);
             //}
-            inductionState.powerLevels = powerLevels;
-            //TODO Change name and figure out how to handle when power is limited
-            gui.setLimitPower(powerLevels);
-            //Wait with keyboard update until we got the current power
-            if (firstPowerStateReceived) {
-                updateKeyBoard();
-            } else {
-                gui.setPower(powerLevels);
-            }
-            firstPowerStateReceived = true;
+            inductionHob.setCurrentPowerLevels(powerLevels);
+            updateGui();
         }
 
         @Override
         public void onUnknownData() {
             System.out.println("onUnknownData");
-        }
-    }
-
-    private class InductionKeyboardChecker implements Runnable {
-
-        private final Induction induction;
-
-		public InductionKeyboardChecker(Induction induction) {
-            this.induction = induction;
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    InductionEvent event = induction.readEvent();
-                    if (event instanceof ButtonMaskChangedEvent) {
-                        ButtonMaskChangedEvent butChangedEvent = (ButtonMaskChangedEvent) event;
-                        System.out.println("ButtonMaskChangedEvent:" +
-                            Integer.toHexString(butChangedEvent.getButtonMask() & 0xFFFF));
-                    } else if (event instanceof Induction.UserReleasedEvent) {
-                        System.out.println("UserReleasedEvent");
-                    } else if (event instanceof Induction.UserPressedEvent) {
-                        System.out.println("UserPressedEvent");
-                    } else {
-                        System.out.println("Got unknown event:" + event);
-                    }
-                } catch (ConnectionLostException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-            }
         }
     }
 }
