@@ -12,8 +12,11 @@ public class InductionHob {
     private long safeToPressTime;
     private boolean firstPowerStateReceived;
     private boolean userPressedClock;
+    private short lastButtonMask = 0;
+    private long zeroPeriodStop;
 
     private static final short[] ZONE_POWER_CONTROL_MASK = new short[4];
+    private static final long MS_TO_WAIT_BETWEEN_PRESSES = 1000L;
     static {
         ZONE_POWER_CONTROL_MASK[InductionControl.ZONE_LEFT_FRONT]
                 = Induction.BUTTON_MASK_POWER_CONTROL_LEFT_FRONT;
@@ -93,7 +96,27 @@ public class InductionHob {
         if (isOkToPressButton()) {
             for (int zone = 0; zone < zones.length; zone++) {
                 buttonMask |= zones[zone].getButtonMask();
+                if (buttonMask != 0) {
+                    // Only control one zone at a time
+                    break;
+                }
             }
+        }
+        if (lastButtonMask != buttonMask){
+            if (buttonMask == 0) {
+                zeroPeriodStop = System.currentTimeMillis() + MS_TO_WAIT_BETWEEN_PRESSES;
+            } else {
+                if (lastButtonMask == 0) {
+                    if (System.currentTimeMillis() < zeroPeriodStop) {
+                        System.out.println("We need to wait some time between kep presses");
+                        buttonMask = 0;
+                    }
+                } else {
+                    zeroPeriodStop = System.currentTimeMillis() + MS_TO_WAIT_BETWEEN_PRESSES;
+                    buttonMask = 0;
+                }
+            }
+            lastButtonMask = buttonMask;
         }
         return buttonMask;
     }
