@@ -77,14 +77,16 @@ public class Zone {
 
     public short getButtonMask() {
         short buttonMask = 0;
-        if (targetPowerLevel > currentPowerLevel) {
-            //System.out.println("Need plus for zone " + zone);
-            buttonMask |= ZONE_TO_PLUS_MASK[zone];
-        } else if (targetPowerLevel < currentPowerLevel) {
-            //System.out.println("Need minus for zone " + zone);
-            buttonMask |= ZONE_TO_MINUS_MASK[zone];
-        } else {
-            //System.out.println("Target reached for zone " + zone);
+        if (potPresent || (currentPowerLevel == 0)) {
+            if (targetPowerLevel > currentPowerLevel) {
+                //System.out.println("Need plus for zone " + zone);
+                buttonMask |= ZONE_TO_PLUS_MASK[zone];
+            } else if (targetPowerLevel < currentPowerLevel) {
+                //System.out.println("Need minus for zone " + zone);
+                buttonMask |= ZONE_TO_MINUS_MASK[zone];
+            } else {
+                //System.out.println("Target reached for zone " + zone);
+            }
         }
         return buttonMask;
     }
