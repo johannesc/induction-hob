@@ -5,11 +5,13 @@ import ioio.lib.api.Induction;
 
 public class InductionHob {
     private static final long MS_TO_WAIT_AFTER_USER_RELEASED = 2000L;
+    private static final long MS_TO_WAIT_WHEN_CLOCK_WAS_PRESSED = 4500L;
     private final Zone[] zones = new Zone[4];
     private boolean powered = false;
     private boolean userPressed;
-    private long userReleasedTime;
+    private long safeToPressTime;
     private boolean firstPowerStateReceived;
+    private boolean userPressedClock;
 
     private static final short[] ZONE_POWER_CONTROL_MASK = new short[4];
     static {
@@ -100,8 +102,7 @@ public class InductionHob {
         if (firstPowerStateReceived) {
             if (isPowered()) {
                 if (!userPressed) {
-                    if (userReleasedTime < (System.currentTimeMillis()
-                            - MS_TO_WAIT_AFTER_USER_RELEASED)) {
+                    if (safeToPressTime < System.currentTimeMillis()) {
                         return true;
                     } else {
                         //System.out.println("User recently released a button, lets wait more");
@@ -130,26 +131,34 @@ public class InductionHob {
 
     public synchronized void reportActualButtonMask(final short buttonMask,
             final boolean userPressed) {
-        short ourMask = getButtonMask();
-        System.out.println("ourMask" + Integer.toHexString(ourMask));
         if (this.userPressed != userPressed) {
             if (userPressed) {
                 // User has just began pressing a button. The firmware has cleared the mask
                 // for us
                 this.userPressed = true;
             } else {
-                // User has just released all buttons. Lets remember the tim so we know when
+                // User has just released all buttons. Lets remember the time so we know when
                 // it is "safe" for us to start "pressing" buttons again.
                 this.userPressed = false;
-                userReleasedTime = System.currentTimeMillis();
+                safeToPressTime = System.currentTimeMillis();
+                if (userPressedClock) {
+                    safeToPressTime += MS_TO_WAIT_WHEN_CLOCK_WAS_PRESSED;
+                    userPressedClock = false;
+                    System.out.println("Waiting extra time since clock was pressed");
+                } else {
+                    safeToPressTime += MS_TO_WAIT_AFTER_USER_RELEASED;
+                    System.out.println("Waiting some time before we start pressing again");
+                }
             }
         }
-        // Compensate for our "own" mask here.
-        short userPressingMask = (short)((buttonMask & ~ourMask) & 0xFFFF);
-        System.out.println("userPressingMask" + Integer.toHexString(userPressingMask));
+        if ((buttonMask & Induction.BUTTON_MASK_CLOCK) != 0){
+            // We need to wait a bit longer
+            userPressedClock = true;
+        }
+        System.out.println("userPressingMask" + Integer.toHexString(buttonMask));
         for (int zone = 0; zone < zones.length; zone++) {
             boolean userControllingZone = userPressed &&
-                    (ZONE_POWER_CONTROL_MASK[zone] & userPressingMask) != 0;
+                    (ZONE_POWER_CONTROL_MASK[zone] & buttonMask) != 0;
             zones[zone].reportUserPowerControl(userControllingZone);
             System.out.println("Zone " + zone + " userControlling:" + userControllingZone);
         }
