@@ -8,6 +8,9 @@ import ioio.lib.api.IOIO;
 import ioio.lib.api.Induction;
 import ioio.lib.api.Induction.ButtonMaskChangedEvent;
 import ioio.lib.api.Induction.InductionEvent;
+import ioio.lib.api.TemperatureSensor;
+import ioio.lib.api.TemperatureSensor.TemperatureEvent;
+import ioio.lib.api.TemperatureSensor.TemperatureDataEvent;
 import ioio.lib.api.Uart;
 import ioio.lib.api.Uart.Parity;
 import ioio.lib.api.Uart.StopBits;
@@ -50,11 +53,13 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
         return new IOIOLooper() {
             private Induction induction;
             private short lastMask = 0;
+            private TemperatureSensor tempSensor;
 
             @Override
             public void setup(IOIO ioio) throws ConnectionLostException,
                     InterruptedException {
                 induction = ioio.openInduction();
+                tempSensor = ioio.openTemperatureSensor();
                 Uart uart = ioio.openUart(1, IOIO.INVALID_PIN, 9600, Parity.EVEN, StopBits.ONE);
                 PowerCardCallback powerCardCallback = new PowerCardCallbackImpl();
                 KeyBoardCallback keyboardCardCallback = new KeyBoardCallbackImpl();
@@ -103,6 +108,21 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
                             inductionHob.reportActualButtonMask(buttonMask, userPressed);
                         } else {
                             System.out.println("Got unknown event:" + event);
+                        }
+                    }
+
+                    while (tempSensor.getEventCount() > 0) {
+                        TemperatureEvent event = tempSensor.readEvent();
+                        if (event instanceof TemperatureDataEvent) {
+                            TemperatureDataEvent tempEvent = (TemperatureDataEvent) event;
+                            System.out.print("Fahrenheit="
+                                    + tempEvent.getTemperatureInFahrenheit());
+                            System.out.print(" Celsius="
+                                    + tempEvent.getTemperatureInCelsius());
+                            System.out.println(" Address="
+                                    + tempEvent.getAddress());
+                        } else {
+                            System.err.println("Unknown event: " + event);
                         }
                     }
                 } catch (ConnectionLostException e) {
