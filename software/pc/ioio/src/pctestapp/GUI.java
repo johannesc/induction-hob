@@ -5,16 +5,20 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-public class GUI {
+public class GUI implements ActionListener {
     public static final int LF = 0;
     public static final int LB = 1;
     public static final int RB = 2;
@@ -23,6 +27,9 @@ public class GUI {
 
     Zone[] zones = new Zone[4];
     JCheckBox powered;
+    JButton programButton;
+    boolean start = true;
+    private JTextField tempField;
 
     public static void main(String[] args) {
         GUI gui = new GUI();
@@ -30,6 +37,11 @@ public class GUI {
             @Override
             public void onPowerLevelChanged(int zone, int powerLevel) {
                 System.out.println("onPowerLevelChanged " + zone + " lvl=" + powerLevel);
+            }
+
+            @Override
+            public void onStartStopProgramPressed(boolean start) {
+                System.out.println("onStartProgramPressed:" + start);
             }
         });
         gui.enablePowerControl(true);
@@ -63,12 +75,36 @@ public class GUI {
 
         c.gridx = 0;
         c.gridy = 2;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridwidth = GridBagConstraints.REMAINDER;
 
         powered = new JCheckBox("Powered");
         powered.setEnabled(false);
-        c.gridx = 1;
+
+        tempField = new JTextField("000\u2103");
+        tempField.setEditable(false);
+        tempField.setBorder(BorderFactory.createEmptyBorder());
+
+        programButton = new JButton("Start program");
+        programButton.addActionListener(this);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new GridBagLayout());
+
+        GridBagConstraints c2 = new GridBagConstraints();
+        c2.gridy = 0;
+        c2.fill = GridBagConstraints.HORIZONTAL;
+
+        c2.gridx = 0;
+        bottomPanel.add(programButton);
+        c2.gridx = 1;
+        bottomPanel.add(tempField);
+        c2.gridx = 2;
+        bottomPanel.add(powered);
+
+        c.gridx = 0;
         c.gridy = 2;
-        frame.getContentPane().add(powered, c);
+        frame.getContentPane().add(bottomPanel, c);
 
         frame.pack();
         frame.setVisible(true);
@@ -110,8 +146,13 @@ public class GUI {
         }
     }
 
+    public void setTemperature(int temperature) {
+        tempField.setText(Integer.toString(temperature) + "\u2103");
+    }
+
     public static interface Callback {
         public void onPowerLevelChanged(int zone, int powerLevel);
+        public void onStartStopProgramPressed(boolean start);
     }
 
     @SuppressWarnings("serial")
@@ -183,5 +224,12 @@ public class GUI {
                 }
             }
         }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent actionEvent) {
+        callback.onStartStopProgramPressed(start);
+        start = !start;
+        programButton.setText(start ? "Start program" : "Stop program");
     }
 }

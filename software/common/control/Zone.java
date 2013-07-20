@@ -34,7 +34,7 @@ public class Zone {
                   = Induction.BUTTON_MASK_MINUS_RIGHT_FRONT;
     }
 
-    public Zone(int zone) {
+    protected Zone(int zone) {
         this.zone = zone;
     }
 

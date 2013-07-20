@@ -28,9 +28,16 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
 
     private GUI gui;
 
+    //TODO make an array for each zone? Or set the controller on the zone?
+    private TemperatureController tempController;
+
+    protected int temperature;
+
     public static void main(String[] args) throws Exception {
-        //System.setProperty("ioio.SerialPorts", "/dev/rfcomm0");
-        System.setProperty("ioio.SerialPorts", "/dev/ttyACM0");
+        // Bluetooth needs "sudo rfcomm bind /dev/rfcomm0 00:15:83:4D:8B:A2 1"
+        System.setProperty("ioio.SerialPorts", "/dev/rfcomm0");
+        //System.setProperty("ioio.SerialPorts", "/dev/ttyACM0");
+        //System.setProperty("ioio.SerialPorts", "/dev/ttyACM0:/dev/rfcomm0");
         new PCTestApp().go(args);
     }
 
@@ -54,6 +61,8 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
             private Induction induction;
             private short lastMask = 0;
             private TemperatureSensor tempSensor;
+            //TODO fix...
+            private int lastLevel;
 
             @Override
             public void setup(IOIO ioio) throws ConnectionLostException,
@@ -70,12 +79,22 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
             @Override
             public void loop() throws ConnectionLostException, InterruptedException {
                 readInductionEvents();
+                if (tempController != null) {
+                    int level = tempController.getTargetPowerLevel();
+                    if (level != lastLevel) {
+                        System.out.println("TempController: new temperature!");
+                        lastLevel = level;
+                        inductionHob.setTargetPowerLevel(1, level);
+                        updateGui();
+                    }
+                }
                 short buttonMask = inductionHob.getButtonMask();
                 if (lastMask != buttonMask ) {
                     System.out.println("Setting mask to: " + Integer.toHexString(buttonMask));
                     induction.setInductionButtonMask(buttonMask);
                     lastMask = buttonMask;
                 }
+                //TODO replace with a wait/notify thing
                 Thread.sleep(10);
             }
 
@@ -121,6 +140,11 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
                                     + tempEvent.getTemperatureInCelsius());
                             System.out.println(" Address="
                                     + tempEvent.getAddress());
+                            if (tempController != null) {
+                                tempController.reportTemperature(tempEvent
+                                        .getTemperatureInCelsius());
+                            }
+                            temperature = tempEvent.getTemperatureInCelsius();
                         } else {
                             System.err.println("Unknown event: " + event);
                         }
@@ -183,6 +207,7 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
                 gui.setActualPowerLevels(inductionHob.getCurrenPowerLevels());
                 gui.setTargetPower(inductionHob.getTargetPowerLevels());
                 gui.setPotPresent(inductionHob.getPotPresent());
+                gui.setTemperature(temperature);
             }
         });
     }
@@ -206,6 +231,46 @@ public class PCTestApp extends IOIOConsoleApp implements GUI.Callback {
         @Override
         public void onUnknownData() {
             System.out.println("onUnknownData");
+        }
+    }
+
+    @Override
+    public void onStartStopProgramPressed(boolean start) {
+        System.out.println("onStartStopProgramPressed:" + start);
+        // TODO Also grey out controls?
+        if (start) {
+            tempController = new TemperatureController();
+        } else {
+            tempController = null;
+        }
+    }
+
+    class TemperatureController {
+        private int temperature;
+
+        public void reportTemperature(int temperature) {
+            System.out.println("reportTemperature:"+temperature);
+            this.temperature = temperature;
+        }
+
+        boolean boiled = false;
+        // Simple algorithm to heat milk
+        public int getTargetPowerLevel() {
+            if (boiled) return 1;
+            if (temperature < 80) {
+                return 11;
+            } else if (temperature < 88) {
+                return 10;
+            } else if (temperature < 93) {
+                return 9;
+            } else if (temperature < 94) {
+                return 8;
+            } else if (temperature < 95) {
+                return 3;
+            } else {
+                boiled = true;
+                return 1;
+            }
         }
     }
 }

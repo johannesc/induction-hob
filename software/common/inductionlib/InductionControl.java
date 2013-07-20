@@ -72,10 +72,10 @@ public class InductionControl {
     public static final int ZONE_RIGHT_BACK = 2;
     public static final int ZONE_RIGHT_FRONT = 3;
 
-    private final byte[] powerLevels2Byte = { POWER_LEVEL_0, POWER_LEVEL_U,
-            POWER_LEVEL_1, POWER_LEVEL_2, POWER_LEVEL_3, POWER_LEVEL_4,
-            POWER_LEVEL_5, POWER_LEVEL_6, POWER_LEVEL_7, POWER_LEVEL_8,
-            POWER_LEVEL_9, POWER_LEVEL_P };
+    private final byte[] powerLevels2Byte = { RAW_POWER_LEVEL_0, RAW_POWER_LEVEL_U,
+            RAW_POWER_LEVEL_1, RAW_POWER_LEVEL_2, RAW_POWER_LEVEL_3, RAW_POWER_LEVEL_4,
+            RAW_POWER_LEVEL_5, RAW_POWER_LEVEL_6, RAW_POWER_LEVEL_7, RAW_POWER_LEVEL_8,
+            RAW_POWER_LEVEL_9, RAW_POWER_LEVEL_P };
 
     private int getPowerLevelFromByte(byte data) {
         for (int i = 0; i < powerLevels2Byte.length; i++) {
@@ -241,18 +241,18 @@ public class InductionControl {
     private static final byte ZONE_HOT_MASK = 0x40;
     private static final byte POWER_ACTIVE_MASK = 0x01;
 
-    public static final byte POWER_LEVEL_0 = 0x00;
-    static final byte POWER_LEVEL_U = 0x01;
-    static final byte POWER_LEVEL_1 = 0x02;
-    static final byte POWER_LEVEL_2 = 0x08;
-    static final byte POWER_LEVEL_3 = 0x0C;
-    static final byte POWER_LEVEL_4 = 0x0F;
-    static final byte POWER_LEVEL_5 = 0x11;
-    static final byte POWER_LEVEL_6 = 0x14;
-    static final byte POWER_LEVEL_7 = 0x15;
-    static final byte POWER_LEVEL_8 = 0x16;
-    static final byte POWER_LEVEL_9 = 0x17;
-    static final byte POWER_LEVEL_P = 0x18;
+    private static final byte RAW_POWER_LEVEL_0 = 0x00;
+    private static final byte RAW_POWER_LEVEL_U = 0x01;
+    private static final byte RAW_POWER_LEVEL_1 = 0x02;
+    private static final byte RAW_POWER_LEVEL_2 = 0x08;
+    private static final byte RAW_POWER_LEVEL_3 = 0x0C;
+    private static final byte RAW_POWER_LEVEL_4 = 0x0F;
+    private static final byte RAW_POWER_LEVEL_5 = 0x11;
+    private static final byte RAW_POWER_LEVEL_6 = 0x14;
+    private static final byte RAW_POWER_LEVEL_7 = 0x15;
+    private static final byte RAW_POWER_LEVEL_8 = 0x16;
+    private static final byte RAW_POWER_LEVEL_9 = 0x17;
+    private static final byte RAW_POWER_LEVEL_P = 0x18;
 
     public static final byte POWERSTATUS_OFF = 0x00;
     public static final byte POWERSTATUS_ON_IDLE = 0x01;
