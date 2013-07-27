@@ -186,4 +186,8 @@ public class InductionHob {
             System.out.println("Zone " + zone + " userControlling:" + userControllingZone);
         }
     }
+
+    public void setProgram(int zone, ZoneController zoneController) {
+        zones[zone].setProgram(zoneController);
+    }
 }
