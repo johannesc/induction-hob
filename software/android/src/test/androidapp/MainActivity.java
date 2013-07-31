@@ -16,7 +16,7 @@ import android.widget.ToggleButton;
 
 /**
  * This is the main activity of the HelloIOIO example application.
- * 
+ *
  * It displays a toggle button on the screen, which enables control of the
  * on-board LED. This example shows a very simple usage of the IOIO, by using
  * the {@link IOIOActivity} class. For a more advanced use case, see the
@@ -25,7 +25,7 @@ import android.widget.ToggleButton;
 public class MainActivity extends IOIOActivity implements Gui {
     protected static final String LOG_TAG = "INDUCTION";
 
-    private ToggleButton button_;
+    private ToggleButton debugButton;
     InductionController inductionController = new InductionController(this);
     private ToggleButton programButton;
 
@@ -42,17 +42,19 @@ public class MainActivity extends IOIOActivity implements Gui {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        button_ = (ToggleButton) findViewById(R.id.button);
+        debugButton = (ToggleButton) findViewById(R.id.button);
         programButton = (ToggleButton) findViewById(R.id.startStopProgramButton);
         temperatureTextView = (TextView) findViewById(R.id.textViewTemperature);
 
-        button_.setOnClickListener(new View.OnClickListener() {
+        debugButton.setOnClickListener(new View.OnClickListener() {
+            @Override
             public void onClick(View v) {
-                inductionController.setDebugLed(button_.isChecked());
+                inductionController.setDebugLed(!debugButton.isChecked());
             }
         });
 
         programButton.setOnClickListener(new View.OnClickListener() {
+            @Override
             public void onClick(View v) {
                 inductionController.startStopProgram(currentPlate,
                         programButton.isChecked());
@@ -87,7 +89,7 @@ public class MainActivity extends IOIOActivity implements Gui {
             plateSelector[i].setOnCheckedChangeListener(list);
         }
 
-        button_ = (ToggleButton) findViewById(R.id.button);
+        debugButton = (ToggleButton) findViewById(R.id.button);
         slider = (SeekBar) findViewById(R.id.powerSlider);
         slider.setMax(11);
         slider.setProgress(powerLevels[currentPlate]);
@@ -121,7 +123,7 @@ public class MainActivity extends IOIOActivity implements Gui {
 
     /**
      * A method to create our IOIO thread.
-     * 
+     *
      * @see ioio.lib.util.AbstractIOIOActivity#createIOIOThread()
      */
     @Override
@@ -144,7 +146,7 @@ public class MainActivity extends IOIOActivity implements Gui {
     @Override
     public void setCurrentTargetPowerLevels(int[] powerLevels) {
         // TODO could we show this in a nice user friendly way?
-        // Lets ignore for now. 
+        // Lets ignore for now.
     }
 
     @Override
@@ -179,5 +181,10 @@ public class MainActivity extends IOIOActivity implements Gui {
                 }
             }
         });
+    }
+
+    @Override
+    public void setConnected(boolean connected) {
+
     }
 }

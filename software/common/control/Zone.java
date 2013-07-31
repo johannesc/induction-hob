@@ -76,10 +76,12 @@ public class Zone {
         this.userControlling = userControlling;
         // User is controlling power here, lets abort any ongoing target power controlling
         // TODO: This seems a bit ugly... UI does not get updated?
+        /* Disabled for now, seems to be unreliable at the moment, have to dig into the firmware
         if (userControlling) {
             //this.targetPowerLevel = currentPowerLevel;
             zoneController.setTargetPowerLevel(currentPowerLevel);
         }
+        */
     }
 
     public int getCurrentPowerLevel() {
