@@ -4,80 +4,13 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="wrap_content"
+    <TextView
+        android:id="@+id/textViewTemperature"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:orientation="horizontal" >
-
-        <LinearLayout
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:orientation="vertical" >
-
-            <RadioButton
-                android:id="@+id/radioButtonLeftBack"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/left_back_text"
-                android:textAlignment="viewStart" />
-
-            <RadioButton
-                android:id="@+id/radioButtonLeftFront"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/left_front_text" />
-        </LinearLayout>
-
-        <LinearLayout
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:orientation="vertical" >
-
-            <RadioButton
-                android:id="@+id/radioButtonRightBack"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/right_back_text" />
-
-            <RadioButton
-                android:id="@+id/radioButtonRightFront"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/right_front_text" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <SeekBar
-        android:id="@+id/powerSlider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <ScrollView
-        android:id="@+id/scrollView1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
-
-            <TextView
-                android:id="@+id/textViewTemperature"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/unknown_temperatue"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
-        </LinearLayout>
-    </ScrollView>
+        android:gravity="center"
+        android:text="@string/unknown_temperatue"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
 
     <ToggleButton
         android:id="@+id/startStopProgramButton"
@@ -94,4 +27,18 @@
         android:enabled="false"
         android:text="@string/connected" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+        <include layout="@layout/seekbar" android:id="@+id/leftBack"/>
+        <include layout="@layout/seekbar" android:id="@+id/rightBack"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <include layout="@layout/seekbar" android:id="@+id/leftFront"/>
+        <include layout="@layout/seekbar" android:id="@+id/rightFront"/>
+    </LinearLayout>
 </LinearLayout>

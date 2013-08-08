@@ -8,7 +8,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Paint.Style;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -36,9 +43,10 @@ public class MainActivity extends Activity implements Gui {
     private ToggleButton programButton;
 
     int[] powerLevels = { 0, 0, 0, 0 };
-    RadioButton[] plateSelector = new RadioButton[4];
-    SeekBar slider;
-    int currentPlate = 0;
+    //RadioButton[] plateSelector = new RadioButton[4];
+    //SeekBar slider;
+    //int currentPlate = 0;
+    private final SeekBar[] seekBars = new SeekBar[4];
 
     private TextView temperatureTextView;
 
@@ -62,43 +70,19 @@ public class MainActivity extends Activity implements Gui {
         programButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                inductionController.startStopProgram(currentPlate,
+                //TODO dont hardcode zone
+                inductionController.startStopProgram(1,
                         programButton.isChecked());
-                programRunning[currentPlate] = programButton.isChecked();
+                programRunning[1] = programButton.isChecked();
             }
         });
 
-        plateSelector[0] = (RadioButton) findViewById(R.id.radioButtonLeftFront);
-        plateSelector[1] = (RadioButton) findViewById(R.id.radioButtonLeftBack);
-        plateSelector[2] = (RadioButton) findViewById(R.id.radioButtonRightBack);
-        plateSelector[3] = (RadioButton) findViewById(R.id.radioButtonRightFront);
-        plateSelector[currentPlate].setChecked(true);
+        seekBars[0] = getSeekBar(R.id.leftFront);
+        seekBars[1] = getSeekBar(R.id.leftBack);
+        seekBars[2] = getSeekBar(R.id.rightBack);
+        seekBars[3] = getSeekBar(R.id.rightFront);
 
-        OnCheckedChangeListener list = new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                    boolean isChecked) {
-                Log.w(LOG_TAG, "onCheckedChanged = " + isChecked);
-                if (isChecked) {
-                    for (int i = 0; i < plateSelector.length; i++) {
-                        if (buttonView != plateSelector[i]) {
-                            plateSelector[i].setChecked(false);
-                        } else {
-                            currentPlate = i;
-                            slider.setProgress(powerLevels[currentPlate]);
-                        }
-                    }
-                }
-            }
-        };
-        for (int i = 0; i < plateSelector.length; i++) {
-            plateSelector[i].setOnCheckedChangeListener(list);
-        }
-
-        slider = (SeekBar) findViewById(R.id.powerSlider);
-        slider.setMax(11);
-        slider.setProgress(powerLevels[currentPlate]);
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        SeekBar.OnSeekBarChangeListener seekListener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
@@ -110,15 +94,31 @@ public class MainActivity extends Activity implements Gui {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress,
                     boolean fromUser) {
+                int zone;
+                for (zone = 0; zone < seekBars.length; zone++) {
+                    if (seekBar == seekBars[zone]) {
+                        break;
+                    }
+                }
                 Log.w(LOG_TAG, "progress = " + progress + " fromUser="
                         + fromUser);
                 if (fromUser) {
-                    powerLevels[currentPlate] = progress;
-                 inductionController.setPowerLevels(powerLevels);
+                    powerLevels[zone] = progress;
+                    inductionController.setPowerLevels(powerLevels);
                 }
             }
-        });
+        };
+
+        for (SeekBar seekBar : seekBars) {
+            seekBar.setOnSeekBarChangeListener(seekListener);
+        }
         Log.w(LOG_TAG, "onCreat - donee");
+    }
+
+    private SeekBar getSeekBar(int viewId) {
+        View view = findViewById(viewId);
+        SeekBar seekBar = (SeekBar) view.findViewById(R.id.seekBar);
+        return seekBar;
     }
 
     @Override
@@ -170,21 +170,26 @@ public class MainActivity extends Activity implements Gui {
      */
 
     @Override
-    public void setCurrentPowerLevels(int[] powerLevels) {
+    public void setCurrentPowerLevels(final int[] powerLevels) {
         this.powerLevels = powerLevels;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                slider.setProgress(MainActivity.this.powerLevels[currentPlate]);
-                programButton.setChecked(programRunning[currentPlate]);
+                for (int zone = 0; zone < powerLevels.length; zone++) {
+                    int level = powerLevels[zone];
+                    seekBars[zone].setSecondaryProgress(level);
+                }
+                //programButton.setChecked(programRunning[currentPlate]);
             }
         });
     }
 
     @Override
     public void setCurrentTargetPowerLevels(int[] powerLevels) {
-        // TODO could we show this in a nice user friendly way?
-        // Lets ignore for now.
+        for (int zone = 0; zone < powerLevels.length; zone++) {
+            int level = powerLevels[zone];
+            seekBars[zone].setProgress(level);
+        }
     }
 
     @Override
@@ -202,9 +207,9 @@ public class MainActivity extends Activity implements Gui {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                for (int i = 0; i < hot.length; i++) {
-                    plateSelector[i].setBackgroundColor(hot[i] ? Color.RED : Color.GREEN);
-                }
+//                for (int i = 0; i < hot.length; i++) {
+//                    plateSelector[i].setBackgroundColor(hot[i] ? Color.RED : Color.GREEN);
+//                }
             }
         });
     }
@@ -214,9 +219,9 @@ public class MainActivity extends Activity implements Gui {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                for (int i = 0; i < potPresent.length; i++) {
-                    plateSelector[i].setTextColor(potPresent[i] ? Color.YELLOW: Color.RED);
-                }
+//                for (int i = 0; i < potPresent.length; i++) {
+//                    plateSelector[i].setTextColor(potPresent[i] ? Color.YELLOW: Color.RED);
+//                }
             }
         });
     }
