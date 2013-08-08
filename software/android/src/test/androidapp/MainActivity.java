@@ -1,12 +1,19 @@
 package test.androidapp;
 
-import ioio.lib.util.IOIOLooper;
 import ioio.lib.util.android.IOIOActivity;
 import test.androidapp.InductionController.Gui;
+import test.androidapp.InductionService.InductionBinder;
+import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.RadioButton;
@@ -22,11 +29,10 @@ import android.widget.ToggleButton;
  * the {@link IOIOActivity} class. For a more advanced use case, see the
  * HelloIOIOPower example.
  */
-public class MainActivity extends IOIOActivity implements Gui {
+public class MainActivity extends Activity implements Gui {
     protected static final String LOG_TAG = "INDUCTION";
 
-    private ToggleButton debugButton;
-    InductionController inductionController = new InductionController(this);
+    InductionController inductionController;
     private ToggleButton programButton;
 
     int[] powerLevels = { 0, 0, 0, 0 };
@@ -38,20 +44,20 @@ public class MainActivity extends IOIOActivity implements Gui {
 
     protected boolean[] programRunning = new boolean[4];
 
+    private boolean bound;
+
+    private CheckBox connectedBox;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.w(LOG_TAG, "onCreate");
         super.onCreate(savedInstanceState);
+        Intent intent = new Intent(this, InductionService.class);
+        startService(intent);
         setContentView(R.layout.activity_main);
-        debugButton = (ToggleButton) findViewById(R.id.button);
         programButton = (ToggleButton) findViewById(R.id.startStopProgramButton);
         temperatureTextView = (TextView) findViewById(R.id.textViewTemperature);
-
-        debugButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                inductionController.setDebugLed(!debugButton.isChecked());
-            }
-        });
+        connectedBox = (CheckBox) findViewById(R.id.connectedBox);
 
         programButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,7 +95,6 @@ public class MainActivity extends IOIOActivity implements Gui {
             plateSelector[i].setOnCheckedChangeListener(list);
         }
 
-        debugButton = (ToggleButton) findViewById(R.id.button);
         slider = (SeekBar) findViewById(R.id.powerSlider);
         slider.setMax(11);
         slider.setProgress(powerLevels[currentPlate]);
@@ -109,27 +114,60 @@ public class MainActivity extends IOIOActivity implements Gui {
                         + fromUser);
                 if (fromUser) {
                     powerLevels[currentPlate] = progress;
-                    inductionController.setPowerLevels(powerLevels);
+                 inductionController.setPowerLevels(powerLevels);
                 }
             }
         });
+        Log.w(LOG_TAG, "onCreat - donee");
     }
+
+    @Override
+    protected void onStart() {
+        Log.w(LOG_TAG, "onStart");
+        super.onStart();
+        Log.w(LOG_TAG, "super.onStart done");
+        Intent intent = new Intent(this, InductionService.class);
+        Log.w(LOG_TAG, "binding to sercice...");
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        Log.w(LOG_TAG, "onStart - done");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (bound) {
+            bound = false;
+            unbindService(serviceConnection);
+        }
+    }
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+
+        private InductionService inductionService;
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            inductionController.setGui(null);
+            inductionController = null;
+            inductionService = null;
+            bound = false;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            InductionBinder inductionBinder = (InductionBinder) service;
+            inductionService = inductionBinder.getService();
+            inductionController = inductionService.getInductionController();
+            inductionController.setGui(MainActivity.this);
+            bound = true;
+        }
+    };
 
     /*
      * @Override public boolean onCreateOptionsMenu(Menu menu) { // Inflate the
      * menu; this adds items to the action bar if it is present.
      * getMenuInflater().inflate(R.menu.activity_main, menu); return true; }
      */
-
-    /**
-     * A method to create our IOIO thread.
-     *
-     * @see ioio.lib.util.AbstractIOIOActivity#createIOIOThread()
-     */
-    @Override
-    protected IOIOLooper createIOIOLooper() {
-        return inductionController.createLooper();
-    }
 
     @Override
     public void setCurrentPowerLevels(int[] powerLevels) {
@@ -184,7 +222,12 @@ public class MainActivity extends IOIOActivity implements Gui {
     }
 
     @Override
-    public void setConnected(boolean connected) {
-
+    public void setConnected(final boolean connected) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                connectedBox.setChecked(connected);
+            }
+        });
     }
 }

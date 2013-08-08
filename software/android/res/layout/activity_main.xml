@@ -4,18 +4,6 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <ToggleButton
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/togglebutton" />
-
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/hello" />
-
     <LinearLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="wrap_content"
@@ -98,5 +86,12 @@
         android:text="@string/togglebutton"
         android:textOff="@string/program_off"
         android:textOn="@string/program_on" />
+
+    <CheckBox
+        android:id="@+id/connectedBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="@string/connected" />
 
 </LinearLayout>

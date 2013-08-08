@@ -4,7 +4,6 @@ import inductionlib.InductionControl;
 import inductionlib.InductionControl.Role;
 import inductionlib.KeyBoardCallback;
 import inductionlib.PowerCardCallback;
-import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.Induction;
 import ioio.lib.api.Induction.ButtonMaskChangedEvent;
@@ -33,19 +32,11 @@ public class InductionController implements EventCallback, Induction.EventCallba
             new ArrayList<TemperatureController>();
 
     protected int temperature;
-    private final Gui gui;
+    private Gui gui;
 
-    private boolean debugLed;
-
-    private DigitalOutput debugLedOutput;
     private Induction induction;
     private TemperatureSensor tempSensor;
 	public boolean connected;
-
-    public void setDebugLed(boolean debugLed) {
-        this.debugLed = debugLed;
-        update();
-    }
 
     public interface Gui {
         public void setCurrentTargetPowerLevels(int[] powerLevels);
@@ -56,8 +47,12 @@ public class InductionController implements EventCallback, Induction.EventCallba
         public void setConnected(boolean connected);
     }
 
-    public InductionController(Gui gui) {
+    public InductionController() {
+    }
+
+    public void setGui(Gui gui) {
         this.gui = gui;
+        update();
     }
 
     /**
@@ -83,7 +78,6 @@ public class InductionController implements EventCallback, Induction.EventCallba
          */
         @Override
         protected void setup() throws ConnectionLostException {
-            debugLedOutput = ioio_.openDigitalOutput(0, true);
             induction = ioio_.openInduction();
             induction.registerCallback(InductionController.this);
 
@@ -109,8 +103,10 @@ public class InductionController implements EventCallback, Induction.EventCallba
         @Override
         public void loop() throws ConnectionLostException, InterruptedException {
             InductionController.this.connected = true;
+            update();
             ioio_.waitForDisconnect();
             InductionController.this.connected = false;
+            update();
         }
 
         @Override
@@ -160,23 +156,26 @@ public class InductionController implements EventCallback, Induction.EventCallba
     private short lastMask = 0;
 
     public void update() {
-        gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
-        gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
-        gui.setTemperature(temperature);
-        gui.setHot(inductionHob.getHot());
-        gui.setPotPresent(inductionHob.getPotPresent());
-        gui.setConnected(connected);
+        if (gui != null) {
+            gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
+            gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
+            gui.setTemperature(temperature);
+            gui.setHot(inductionHob.getHot());
+            gui.setPotPresent(inductionHob.getPotPresent());
+            gui.setConnected(connected);
+        }
 
         try {
-            debugLedOutput.write(debugLed);
-            short buttonMask = inductionHob.getButtonMask();
-            if (lastMask != buttonMask) {
-                System.out.println("Setting mask to: " + Integer.toHexString(buttonMask));
-                induction.setInductionButtonMask(buttonMask);
-                lastMask = buttonMask;
+            if (connected) {
+                short buttonMask = inductionHob.getButtonMask();
+                if (lastMask != buttonMask) {
+                    System.out.println("Setting mask to: " + Integer.toHexString(buttonMask));
+                    induction.setInductionButtonMask(buttonMask);
+                    lastMask = buttonMask;
+                }
             }
         } catch (ConnectionLostException e) {
-            // TODO Auto-generated catch block
+            System.out.println("Connection lost");
             e.printStackTrace();
         }
     }
