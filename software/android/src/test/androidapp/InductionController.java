@@ -45,6 +45,7 @@ public class InductionController implements EventCallback, Induction.EventCallba
         public void setHot(boolean[] hot);
         public void setPotPresent(boolean[] potPresent);
         public void setConnected(boolean connected);
+        public void programDone(int zone);
     }
 
     public InductionController() {
@@ -243,7 +244,7 @@ public class InductionController implements EventCallback, Induction.EventCallba
             int result;
             if (boiled) {
                 // Return 1 as our final step.
-                finished = true;
+                setFinished();
                 result = 1;
             } else if (temperature < 80) {
                 result = 11;
@@ -272,11 +273,18 @@ public class InductionController implements EventCallback, Induction.EventCallba
             return result;
         }
 
+        private void setFinished() {
+            this.finished = true;
+            if (gui != null) {
+                gui.programDone(zone);
+            }
+        }
+
         @Override
         public void setTargetPowerLevel(int powerLevel) {
             if (this.userPowerLevel != powerLevel) {
                 this.userPowerLevel = powerLevel;
-                this.finished = true;
+                setFinished();
                 System.out.println("User changed power level I am finishing up!");
             }
         }

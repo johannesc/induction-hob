@@ -279,4 +279,15 @@ public class MainActivity extends Activity implements Gui {
             }
         });
     }
+
+    @Override
+    public void programDone(final int zone) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                programRunning[zone] = false;
+                programButton.setChecked(false);
+            }
+        });
+    }
 }
