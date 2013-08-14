@@ -41,8 +41,12 @@ public class Zone {
         }
     }
 
+    private static final int POWER_LEVEL_P = 11;
+
     private static final short[] ZONE_TO_PLUS_MASK = new short[4];
     private static final short[] ZONE_TO_MINUS_MASK = new short[4];
+    private static final short[] ZONE_TO_POWER_MASK = new short[4];
+
     static {
         ZONE_TO_PLUS_MASK[InductionControl.ZONE_LEFT_FRONT]
                    = Induction.BUTTON_MASK_PLUS_LEFT_FRONT;
@@ -61,6 +65,15 @@ public class Zone {
                    = Induction.BUTTON_MASK_MINUS_RIGHT_BACK;
         ZONE_TO_MINUS_MASK[InductionControl.ZONE_RIGHT_FRONT]
                   = Induction.BUTTON_MASK_MINUS_RIGHT_FRONT;
+
+        ZONE_TO_POWER_MASK[InductionControl.ZONE_LEFT_FRONT]
+                  = Induction.BUTTON_MASK_POWER_LEFT_FRONT;
+        ZONE_TO_POWER_MASK[InductionControl.ZONE_LEFT_BACK]
+                  = Induction.BUTTON_MASK_POWER_LEFT_BACK;
+        ZONE_TO_POWER_MASK[InductionControl.ZONE_RIGHT_BACK]
+                  = Induction.BUTTON_MASK_POWER_RIGHT_BACK;
+        ZONE_TO_POWER_MASK[InductionControl.ZONE_RIGHT_FRONT]
+                  = Induction.BUTTON_MASK_POWER_RIGHT_FRONT;
     }
 
     protected Zone(int zone) {
@@ -131,14 +144,19 @@ public class Zone {
             this.zoneController = new DummyZoneController(targetPowerLevel);
         }
         if (potPresent || (currentPowerLevel == 0) || (targetPowerLevel == 0)) {
-            if (targetPowerLevel > currentPowerLevel) {
+            if (targetPowerLevel == currentPowerLevel) {
+                //System.out.println("Target reached for zone " + zone);
+            } else if (targetPowerLevel == POWER_LEVEL_P) {
+                buttonMask |= ZONE_TO_POWER_MASK[zone];
+            } else if (targetPowerLevel > currentPowerLevel) {
                 //System.out.println("Need plus for zone " + zone);
                 buttonMask |= ZONE_TO_PLUS_MASK[zone];
             } else if (targetPowerLevel < currentPowerLevel) {
                 //System.out.println("Need minus for zone " + zone);
                 buttonMask |= ZONE_TO_MINUS_MASK[zone];
-            } else {
-                //System.out.println("Target reached for zone " + zone);
+            } else if (targetPowerLevel == 0) {
+                buttonMask |= ZONE_TO_PLUS_MASK[zone];
+                buttonMask |= ZONE_TO_MINUS_MASK[zone];
             }
         }
         return buttonMask;
