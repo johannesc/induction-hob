@@ -4,26 +4,19 @@ import ioio.lib.util.android.IOIOActivity;
 import test.androidapp.InductionController.Gui;
 import test.androidapp.InductionService.InductionBinder;
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Paint.Style;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -38,6 +31,8 @@ import android.widget.ToggleButton;
  */
 public class MainActivity extends Activity implements Gui {
     protected static final String LOG_TAG = "INDUCTION";
+
+    private static final int NOTIFICATION_ID = 1;
 
     InductionController inductionController;
     private ToggleButton programButton;
@@ -56,12 +51,16 @@ public class MainActivity extends Activity implements Gui {
 
     private CheckBox connectedBox;
 
+    Intent serviceIntent;
+    NotificationCompat.Builder notificationBuilder;
+    NotificationManager notificationManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.w(LOG_TAG, "onCreate");
+        serviceIntent = new Intent(this, InductionService.class);
         super.onCreate(savedInstanceState);
-        Intent intent = new Intent(this, InductionService.class);
-        startService(intent);
+        startService(serviceIntent);
         setContentView(R.layout.activity_main);
         programButton = (ToggleButton) findViewById(R.id.startStopProgramButton);
         temperatureTextView = (TextView) findViewById(R.id.textViewTemperature);
@@ -121,6 +120,38 @@ public class MainActivity extends Activity implements Gui {
         return seekBar;
     }
 
+    private void createNotification() {
+        notificationBuilder =
+                new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle("Induction Hob")
+                .setContentText("Click to show");
+
+        Intent resultIntent = new Intent(this, this.getClass());
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(this.getClass());
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent =
+                stackBuilder.getPendingIntent(
+                    0,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                );
+        notificationBuilder.setContentIntent(resultPendingIntent);
+        notificationManager =
+            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+    }
+
+    private void removeNotification() {
+        notificationManager.cancel(NOTIFICATION_ID);
+    }
+
+    private void updateNotification() {
+        notificationBuilder.setContentText("Click to show " + temperatureTextView.getText());
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+    }
+
     @Override
     protected void onStart() {
         Log.w(LOG_TAG, "onStart");
@@ -129,6 +160,7 @@ public class MainActivity extends Activity implements Gui {
         Intent intent = new Intent(this, InductionService.class);
         Log.w(LOG_TAG, "binding to sercice...");
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        createNotification();
         Log.w(LOG_TAG, "onStart - done");
     }
 
@@ -138,6 +170,17 @@ public class MainActivity extends Activity implements Gui {
         if (bound) {
             bound = false;
             unbindService(serviceConnection);
+            if (isFinishing()) {
+                removeNotification();
+            }
+        }
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (isFinishing()) {
+            Log.w(LOG_TAG, "onDestroy - finishing - stopping servive");
+            stopService(serviceIntent);
         }
     }
 
@@ -198,6 +241,7 @@ public class MainActivity extends Activity implements Gui {
             @Override
             public void run() {
                 temperatureTextView.setText(Integer.toString(temperature) + "\u2103");
+                updateNotification();
             }
         });
     }
