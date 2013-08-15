@@ -5,41 +5,13 @@ import ioio.lib.api.Induction;
 
 public class Zone {
     private int currentPowerLevel;
-    //private int targetPowerLevel;
-    private boolean powered;
     private boolean potPresent;
     private boolean hot;
     private final int zone;
     private boolean userControlling;
 
-    // TODO fix the zoneController in a smart way!
-    // must handle user presses on the induction hob as well in the ui
-    private ZoneController zoneController = new DummyZoneController(0);
-
-    private class DummyZoneController implements ZoneController {
-        private int targetPowerLevel;
-
-        public DummyZoneController(int targetPowerLevel) {
-            this.targetPowerLevel = targetPowerLevel;
-        }
-
-        @Override
-        public int getTargetPowerLevel() {
-            return targetPowerLevel;
-        }
-
-        @Override
-        public void setTargetPowerLevel(int powerLevel) {
-            System.out.println("DummyZoneController:setTargetPowerLevel:" + powerLevel);
-            targetPowerLevel = powerLevel;
-        }
-
-        @Override
-        public boolean isFinished() {
-            // We never finish!
-            return false;
-        }
-    }
+    private int targetPowerLevel;
+    private boolean controlling = false;
 
     private static final int POWER_LEVEL_P = 11;
 
@@ -88,13 +60,10 @@ public class Zone {
     public void reportUserPowerControl(boolean userControlling) {
         this.userControlling = userControlling;
         // User is controlling power here, lets abort any ongoing target power controlling
-        // TODO: This seems a bit ugly... UI does not get updated?
-        /* Disabled for now, seems to be unreliable at the moment, have to dig into the firmware
         if (userControlling) {
-            //this.targetPowerLevel = currentPowerLevel;
-            zoneController.setTargetPowerLevel(currentPowerLevel);
+            System.out.println("user is controlling zone " + zone + " from the hob, abort our!");
+            controlling = false;
         }
-        */
     }
 
     public int getCurrentPowerLevel() {
@@ -103,27 +72,26 @@ public class Zone {
 
     public void setCurrentPowerLevel(int currentPowerLevel) {
         this.currentPowerLevel = currentPowerLevel;
-        //TODO: UI is not aware of this...
-        if (userControlling) {
-            //this.targetPowerLevel = currentPowerLevel;
-            zoneController.setTargetPowerLevel(currentPowerLevel);
+
+        if (userControlling || !controlling) {
+            this.targetPowerLevel = currentPowerLevel;
         }
     }
 
     public int getTargetPowerLevel() {
-        return zoneController.getTargetPowerLevel();
-        //return targetPowerLevel;
+        return targetPowerLevel;
     }
 
     public void setTargetPowerLevel(int targetPowerLevel) {
         if (!userControlling) {
-            //this.targetPowerLevel = targetPowerLevel;
-            zoneController.setTargetPowerLevel(targetPowerLevel);
-        }
+            this.targetPowerLevel = targetPowerLevel;
+            if (this.currentPowerLevel != targetPowerLevel) {
+                controlling = true;
+            }
+       }
     }
 
     public void setPowered(boolean powered) {
-        this.powered = powered;
     }
 
     public boolean isPotPresent() {
@@ -136,15 +104,14 @@ public class Zone {
 
     public short getButtonMask() {
         short buttonMask = 0;
-        int targetPowerLevel = zoneController.getTargetPowerLevel();
-        boolean finished = zoneController.isFinished();
-        if (finished) {
-            // Controller finished TODO tell UI about this in some smart way
-            System.out.println("ZoneController finished, creating a dummy one at level=" + targetPowerLevel);
-            this.zoneController = new DummyZoneController(targetPowerLevel);
+
+        if (!controlling) {
+            return buttonMask;
         }
+
         if (potPresent || (currentPowerLevel == 0) || (targetPowerLevel == 0)) {
             if (targetPowerLevel == currentPowerLevel) {
+                controlling = false;
                 //System.out.println("Target reached for zone " + zone);
             } else if (targetPowerLevel == POWER_LEVEL_P) {
                 buttonMask |= ZONE_TO_POWER_MASK[zone];
@@ -168,13 +135,5 @@ public class Zone {
 
     public void setHot(boolean hot) {
         this.hot = hot;
-    }
-
-    public void setProgram(ZoneController zoneController) {
-        if (zoneController == null) {
-            this.zoneController = new DummyZoneController(currentPowerLevel);
-        } else {
-            this.zoneController = zoneController;
-        }
     }
 }

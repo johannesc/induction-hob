@@ -6,8 +6,6 @@ import inductionlib.KeyBoardCallback;
 import inductionlib.PowerCardCallback;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.Induction;
-import ioio.lib.api.Induction.ButtonMaskChangedEvent;
-import ioio.lib.api.Induction.InductionEvent;
 import ioio.lib.api.TemperatureSensor;
 import ioio.lib.api.TemperatureSensor.EventCallback;
 import ioio.lib.api.TemperatureSensor.TemperatureDataEvent;
@@ -23,20 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 import control.InductionHob;
-import control.ZoneController;
 
-public class InductionController implements EventCallback, Induction.EventCallback {
+public class InductionController implements EventCallback {
 
-    private final InductionHob inductionHob = new InductionHob();
-    private final List<TemperatureController> tempControllers =
-            new ArrayList<TemperatureController>();
+    private InductionHob inductionHob;
+    private final List<TemperatureListener> temperatureListeners =
+            new ArrayList<TemperatureListener>();
 
     protected int temperature;
     private Gui gui;
 
-    private Induction induction;
+    private final PowerLevelController[] powerControllers = new PowerLevelController[4];
+
     private TemperatureSensor tempSensor;
-	public boolean connected;
+    public boolean connected;
 
     public interface Gui {
         public void setCurrentTargetPowerLevels(int[] powerLevels);
@@ -79,8 +77,8 @@ public class InductionController implements EventCallback, Induction.EventCallba
          */
         @Override
         protected void setup() throws ConnectionLostException {
-            induction = ioio_.openInduction();
-            induction.registerCallback(InductionController.this);
+            Induction induction = ioio_.openInduction();
+            inductionHob = new InductionHob(induction);
 
             tempSensor = ioio_.openTemperatureSensor();
             tempSensor.registerCallback(InductionController.this);
@@ -119,6 +117,8 @@ public class InductionController implements EventCallback, Induction.EventCallba
         @Override
         public void disconnected() {
             super.disconnected();
+            inductionHob.stop();
+            inductionHob = null;
             System.out.println("Disconnected!");
         }
     }
@@ -154,30 +154,16 @@ public class InductionController implements EventCallback, Induction.EventCallba
         }
     }
 
-    private short lastMask = 0;
-
     public void update() {
         if (gui != null) {
-            gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
-            gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
-            gui.setTemperature(temperature);
-            gui.setHot(inductionHob.getHot());
-            gui.setPotPresent(inductionHob.getPotPresent());
-            gui.setConnected(connected);
-        }
-
-        try {
-            if (connected) {
-                short buttonMask = inductionHob.getButtonMask();
-                if (lastMask != buttonMask) {
-                    System.out.println("Setting mask to: " + Integer.toHexString(buttonMask));
-                    induction.setInductionButtonMask(buttonMask);
-                    lastMask = buttonMask;
-                }
+            if (inductionHob != null) {
+                gui.setHot(inductionHob.getHot());
+                gui.setPotPresent(inductionHob.getPotPresent());
+                gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
+                gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
             }
-        } catch (ConnectionLostException e) {
-            System.out.println("Connection lost");
-            e.printStackTrace();
+            gui.setTemperature(temperature);
+            gui.setConnected(connected);
         }
     }
 
@@ -204,47 +190,36 @@ public class InductionController implements EventCallback, Induction.EventCallba
         }
     }
 
-    class TemperatureController implements ZoneController {
+    interface TemperatureListener {
+        public void reportTemperature(int temperature);
+    }
+
+    interface PowerLevelController {
+        public void start();
+        public void stop();
+    }
+
+    class MilkBoilerController implements PowerLevelController, TemperatureListener {
         private int temperature;
         final int zone;
+        private boolean boiled;
 
-        public TemperatureController(int zone) {
+        public MilkBoilerController(int zone) {
             this.zone = zone;
         }
 
+        @Override
         public void reportTemperature(int temperature) {
             System.out.println("reportTemperature:" + temperature);
             this.temperature = temperature;
+            int powerLevel = getTargetPowerLevel();
+            inductionHob.setTargetPowerLevel(zone, powerLevel);
         }
 
-        boolean boiled = false;
-        private boolean finished;
-        private int userPowerLevel;
-        //private long lastLevelStartTime = 0;
-        //private int lastLevel;
-
-        // Simple algorithm to heat milk
-        @Override
-        public int getTargetPowerLevel() {
-            if (finished) {
-                return userPowerLevel;
-            }
-            // TODO we can't do this as we don't know when we get asked again
-            // We must change the interface so that the ZoneController can request an update
-            //
-            //long now = System.currentTimeMillis();
-            //long duration = now - lastLevelStartTime;
-            // We don't want to change up & down all the time.
-            // Perhaps we should filter the temperature sensor data
-            // as it seems to be a bit too quick?
-/*            if (duration < 3000) {
-                System.out.println("Short duration, return last value!");
-                return lastLevel;
-            }*/
+        private int getTargetPowerLevel() {
             int result;
             if (boiled) {
                 // Return 1 as our final step.
-                setFinished();
                 result = 1;
             } else if (temperature < 80) {
                 result = 11;
@@ -256,45 +231,29 @@ public class InductionController implements EventCallback, Induction.EventCallba
                 result = 8;
             } else if (temperature < 95) {
                 result = 6;
-            } /*else if (temperature < 96) {
-                result = 4;
-            } else if (temperature < 97) {
-                result = 3;
-            } else if (temperature < 98) {
-                result = 2;
-            } */else {
+            } else {
                 boiled = true;
+                setFinished();
                 result = 1;
             }
-/*            if (result != lastLevel) {
-                lastLevelStartTime = now;
-                lastLevel = result;
-            }*/
             return result;
         }
 
         private void setFinished() {
-            this.finished = true;
             if (gui != null) {
                 gui.programDone(zone);
             }
+            temperatureListeners.remove(this);
         }
 
         @Override
-        public void setTargetPowerLevel(int powerLevel) {
-            if (this.userPowerLevel != powerLevel) {
-                this.userPowerLevel = powerLevel;
-                setFinished();
-                System.out.println("User changed power level I am finishing up!");
-            }
+        public void start() {
+            temperatureListeners.add(this);
         }
 
         @Override
-        public boolean isFinished() {
-            if (finished) {
-                System.out.println("I am finished!");
-            }
-            return finished;
+        public void stop() {
+            temperatureListeners.remove(this);
         }
     }
 
@@ -312,20 +271,12 @@ public class InductionController implements EventCallback, Induction.EventCallba
 
     // From gui
     public void startStopProgram(int zone, boolean start) {
-        for (TemperatureController oldTempController : tempControllers) {
-            if (oldTempController.zone == zone) {
-                tempControllers.remove(oldTempController);
-                break;
-            }
+        if (powerControllers[zone] != null) {
+            powerControllers[zone].stop();
         }
-        //TODO remove finished ones as well...
         if (start) {
-            TemperatureController tempController = new TemperatureController(zone);
-            tempControllers.add(tempController);
-            //TODO get rid of old ones!!!
-            inductionHob.setProgram(zone, tempController);
-        } else {
-            inductionHob.setProgram(zone, null);
+            powerControllers[zone] = new MilkBoilerController(zone);
+            powerControllers[zone].start();
         }
     }
 
@@ -336,8 +287,8 @@ public class InductionController implements EventCallback, Induction.EventCallba
             System.out.print("Fahrenheit=" + tempEvent.getTemperatureInFahrenheit());
             System.out.print(" Celsius=" + tempEvent.getTemperatureInCelsius());
             System.out.println(" Address=" + tempEvent.getAddress());
-            for (TemperatureController tempController : tempControllers) {
-                tempController.reportTemperature(tempEvent
+            for (TemperatureListener temperatureListener : temperatureListeners) {
+                temperatureListener.reportTemperature(tempEvent
                         .getTemperatureInCelsius());
             }
             // Update temperature in UI
@@ -345,21 +296,6 @@ public class InductionController implements EventCallback, Induction.EventCallba
             update();
         } else {
             System.err.println("Unknown event: " + event);
-        }
-    }
-
-    @Override
-    public void notifyEvent(InductionEvent event) {
-        if (event instanceof ButtonMaskChangedEvent) {
-            ButtonMaskChangedEvent butChangedEvent = (ButtonMaskChangedEvent) event;
-            boolean userPressed = butChangedEvent.getUserPressed();
-            short buttonMask = butChangedEvent.getButtonMask();
-            System.out.println("ButtonMaskChangedEvent:"
-                    + Integer.toHexString(buttonMask & 0xFFFF)
-                    + " userPressed = " + userPressed);
-            inductionHob.reportActualButtonMask(buttonMask, userPressed);
-        } else {
-            System.out.println("Got unknown event:" + event);
         }
     }
 }

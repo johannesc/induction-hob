@@ -2,10 +2,15 @@ package control;
 
 import inductionlib.InductionControl;
 import ioio.lib.api.Induction;
+import ioio.lib.api.Induction.ButtonMaskChangedEvent;
+import ioio.lib.api.Induction.InductionEvent;
+import ioio.lib.api.exception.ConnectionLostException;
 
-public class InductionHob {
+public class InductionHob implements Induction.EventCallback, Runnable {
     private static final long MS_TO_WAIT_AFTER_USER_RELEASED = 2000L;
     private static final long MS_TO_WAIT_WHEN_CLOCK_WAS_PRESSED = 4500L;
+    private static final long MS_TO_WAIT_BETWEEN_PRESSES = 1000L;
+
     private final Zone[] zones = new Zone[4];
     private boolean powered = false;
     private boolean userPressed;
@@ -13,10 +18,12 @@ public class InductionHob {
     private boolean firstPowerStateReceived;
     private boolean userPressedClock;
     private short lastButtonMask = 0;
-    private long zeroPeriodStop;
+    //private long zeroPeriodStop;
+    private final Induction induction;
+    private boolean running = true;
+    private short lastMask = 0;
 
     private static final short[] ZONE_POWER_CONTROL_MASK = new short[4];
-    private static final long MS_TO_WAIT_BETWEEN_PRESSES = 1000L;
     static {
         ZONE_POWER_CONTROL_MASK[InductionControl.ZONE_LEFT_FRONT]
                 = Induction.BUTTON_MASK_POWER_CONTROL_LEFT_FRONT;
@@ -28,15 +35,20 @@ public class InductionHob {
                 = Induction.BUTTON_MASK_POWER_CONTROL_RIGHT_FRONT;
     }
 
-    public InductionHob() {
+    public InductionHob(Induction induction) {
+        this.induction = induction;
         for (int i = 0; i < zones.length; i++) {
             zones[i] = new Zone(i);
         }
+        induction.registerCallback(this);
+        Thread updateThread = new Thread(this);
+        updateThread.start();
     }
 
     public synchronized void setTargetPowerLevel(int zone, int powerLevel) {
         System.out.println("Changing target powerlevels in zone " + zone + " to " + powerLevel);
         zones[zone].setTargetPowerLevel(powerLevel);
+        notifyAll();
     }
 
     public synchronized int[] getTargetPowerLevels() {
@@ -49,18 +61,21 @@ public class InductionHob {
 
     public synchronized void setCurrentPowerStatus(int powerStatus) {
         powered = (powerStatus != InductionControl.POWERSTATUS_OFF);
+        notifyAll();
     }
 
     public synchronized void setCurrentPowerStatus(boolean[] powered) {
         for (int zone = 0; zone < powered.length; zone++) {
             zones[zone].setPowered(powered[zone]);
         }
+        notifyAll();
     }
 
     public synchronized void setCurrentHotStatus(boolean[] hot) {
         for (int zone = 0; zone < hot.length; zone++) {
             zones[zone].setHot(hot[zone]);
         }
+        notifyAll();
     }
 
     public synchronized boolean isPowered() {
@@ -80,6 +95,7 @@ public class InductionHob {
         for (int zone = 0; zone < powerLevels.length; zone++) {
             zones[zone].setCurrentPowerLevel(powerLevels[zone]);
         }
+        notifyAll();
     }
 
     public synchronized int[] getCurrenPowerLevels() {
@@ -90,7 +106,7 @@ public class InductionHob {
         return powerLevels;
     }
 
-    public synchronized short getButtonMask() {
+    private synchronized short getButtonMask() {
         short buttonMask = 0;
 
         if (isOkToPressButton()) {
@@ -102,17 +118,18 @@ public class InductionHob {
                 }
             }
         }
+        // Make sure we wait some time before we press a new button combination
         if (lastButtonMask != buttonMask){
             if (buttonMask == 0) {
-                zeroPeriodStop = System.currentTimeMillis() + MS_TO_WAIT_BETWEEN_PRESSES;
+                safeToPressTime = System.currentTimeMillis() + MS_TO_WAIT_BETWEEN_PRESSES;
             } else {
                 if (lastButtonMask == 0) {
-                    if (System.currentTimeMillis() < zeroPeriodStop) {
+                    if (System.currentTimeMillis() < safeToPressTime) {
                         System.out.println("We need to wait some time between kep presses");
                         buttonMask = 0;
                     }
                 } else {
-                    zeroPeriodStop = System.currentTimeMillis() + MS_TO_WAIT_BETWEEN_PRESSES;
+                    safeToPressTime = System.currentTimeMillis() + MS_TO_WAIT_BETWEEN_PRESSES;
                     buttonMask = 0;
                 }
             }
@@ -152,7 +169,7 @@ public class InductionHob {
         return present;
     }
 
-    public synchronized void reportActualButtonMask(final short buttonMask,
+    private synchronized void reportActualButtonMask(final short buttonMask,
             final boolean userPressed) {
         if (this.userPressed != userPressed) {
             if (userPressed) {
@@ -185,9 +202,61 @@ public class InductionHob {
             zones[zone].reportUserPowerControl(userControllingZone);
             System.out.println("Zone " + zone + " userControlling:" + userControllingZone);
         }
+        notifyAll();
     }
 
-    public void setProgram(int zone, ZoneController zoneController) {
-        zones[zone].setProgram(zoneController);
+    @Override
+    public void notifyEvent(InductionEvent event) {
+        if (event instanceof ButtonMaskChangedEvent) {
+            ButtonMaskChangedEvent butChangedEvent = (ButtonMaskChangedEvent) event;
+            boolean userPressed = butChangedEvent.getUserPressed();
+            short buttonMask = butChangedEvent.getButtonMask();
+            System.out.println("ButtonMaskChangedEvent:"
+                    + Integer.toHexString(buttonMask & 0xFFFF)
+                    + " userPressed = " + userPressed);
+            reportActualButtonMask(buttonMask, userPressed);
+        } else {
+            System.out.println("Got unknown event:" + event);
+        }
+    }
+
+    public synchronized void stop() {
+        System.out.println(this.getClass().getSimpleName() + ": Stopping thread");
+        running = false;
+        notifyAll();
+    }
+
+    @Override
+    public synchronized void run() {
+        while (running) {
+            try {
+                short buttonMask = getButtonMask();
+                if (lastMask  != buttonMask) {
+                    System.out.println("Setting mask to: " + Integer.toHexString(buttonMask));
+                    induction.setInductionButtonMask(buttonMask);
+                    lastMask = buttonMask;
+                }
+
+                long now = System.currentTimeMillis();
+                long nextUpdate = safeToPressTime - now;
+                if (nextUpdate > 0) {
+                    System.out.println(this.getClass().getSimpleName() +
+                            ": wait "+ nextUpdate + "ms");
+                    this.wait(nextUpdate);
+                } else {
+                    System.out.println(this.getClass().getSimpleName() + ": wait forever");
+                    this.wait();
+                }
+                System.out.println(this.getClass().getSimpleName() + ": wait is over");
+            } catch (InterruptedException e) {
+                //Ignore silently
+                System.out.println(this.getClass().getSimpleName() + ": Interrupted!");
+            } catch (ConnectionLostException e) {
+                System.out.println("Connection lost, exiting thread");
+                e.printStackTrace();
+                running = false;
+            }
+        }
+        System.out.println(this.getClass().getSimpleName() + ": Thread is exiting");
     }
 }
