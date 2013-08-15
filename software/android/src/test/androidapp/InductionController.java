@@ -18,7 +18,11 @@ import ioio.lib.util.BaseIOIOLooper;
 import ioio.lib.util.IOIOLooper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import control.InductionHob;
 
@@ -28,8 +32,9 @@ public class InductionController implements EventCallback {
     private final List<TemperatureListener> temperatureListeners =
             new ArrayList<TemperatureListener>();
 
-    protected int temperature;
     private Gui gui;
+    private final Map<Byte, TemperatureReading> temperatures =
+            new HashMap<Byte, TemperatureReading>();
 
     private final PowerLevelController[] powerControllers = new PowerLevelController[4];
 
@@ -39,7 +44,7 @@ public class InductionController implements EventCallback {
     public interface Gui {
         public void setCurrentTargetPowerLevels(int[] powerLevels);
         public void setCurrentPowerLevels(int[] powerLevels);
-        public void setTemperature(int temperature);
+        public void setTemperature(int address, int temperature, boolean valid);
         public void setHot(boolean[] hot);
         public void setPotPresent(boolean[] potPresent);
         public void setConnected(boolean connected);
@@ -162,7 +167,11 @@ public class InductionController implements EventCallback {
                 gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
                 gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
             }
-            gui.setTemperature(temperature);
+            Set<Entry<Byte, TemperatureReading>> entrySet = temperatures.entrySet();
+            for (Entry<Byte, TemperatureReading> entry : entrySet) {
+                gui.setTemperature(entry.getValue().address,
+                        entry.getValue().temperature, entry.getValue().valid);
+            }
             gui.setConnected(connected);
         }
     }
@@ -191,7 +200,7 @@ public class InductionController implements EventCallback {
     }
 
     interface TemperatureListener {
-        public void reportTemperature(int temperature);
+        public void reportTemperature(byte address, int temperature, boolean valid);
     }
 
     interface PowerLevelController {
@@ -203,22 +212,36 @@ public class InductionController implements EventCallback {
         private int temperature;
         final int zone;
         private boolean boiled;
+        private boolean temperatureValid;
+        private boolean temperatureReceived = false;
+        private byte temperatureAddress;
 
         public MilkBoilerController(int zone) {
             this.zone = zone;
         }
 
         @Override
-        public void reportTemperature(int temperature) {
+        public void reportTemperature(byte address, int temperature, boolean valid) {
             System.out.println("reportTemperature:" + temperature);
-            this.temperature = temperature;
-            int powerLevel = getTargetPowerLevel();
-            inductionHob.setTargetPowerLevel(zone, powerLevel);
+            if (!temperatureReceived && valid) {
+                temperatureAddress = address;
+                temperatureReceived = true;
+            }
+            if (temperatureReceived) {
+                if (address == this.temperatureAddress) {
+                    this.temperature = temperature;
+                    this.temperatureValid = valid;
+                    int powerLevel = getTargetPowerLevel();
+                    inductionHob.setTargetPowerLevel(zone, powerLevel);
+                } else {
+                    System.out.println("More that one temp sensor, skipping this " + address);
+                }
+            }
         }
 
         private int getTargetPowerLevel() {
             int result;
-            if (boiled) {
+            if (boiled || !temperatureValid) {
                 // Return 1 as our final step.
                 result = 1;
             } else if (temperature < 80) {
@@ -243,18 +266,31 @@ public class InductionController implements EventCallback {
             if (gui != null) {
                 gui.programDone(zone);
             }
-            temperatureListeners.remove(this);
+            unRegisterTemperatureListener(this);
         }
 
         @Override
         public void start() {
-            temperatureListeners.add(this);
+            registerTemperatureListener(this);
         }
 
         @Override
         public void stop() {
-            temperatureListeners.remove(this);
+            unRegisterTemperatureListener(this);
         }
+    }
+
+    public void registerTemperatureListener(TemperatureListener listener) {
+        temperatureListeners.add(listener);
+        Set<Entry<Byte, TemperatureReading>> entrySet = temperatures.entrySet();
+        for (Entry<Byte, TemperatureReading> entry : entrySet) {
+            listener.reportTemperature(entry.getValue().address,
+                    entry.getValue().temperature, entry.getValue().valid);
+        }
+    }
+
+    public void unRegisterTemperatureListener(TemperatureListener listener) {
+        temperatureListeners.remove(listener);
     }
 
     public IOIOLooper createLooper() {
@@ -280,19 +316,35 @@ public class InductionController implements EventCallback {
         }
     }
 
+    private class TemperatureReading {
+        public final boolean valid;
+        public final int temperature;
+        public final byte address;
+
+        public TemperatureReading(TemperatureDataEvent tempEvent) {
+            temperature = tempEvent.getTemperatureInCelsius();
+            valid = tempEvent.isValid();
+            address = tempEvent.getAddress();
+        }
+    }
+
     @Override
     public void notifyEvent(TemperatureEvent event) {
+        // TODO we should have some mechanism to report when a temperature
+        // is invalid since we have missed a reading. This should probably
+        // be handled in lower layers based on timeout.
         if (event instanceof TemperatureDataEvent) {
             TemperatureDataEvent tempEvent = (TemperatureDataEvent) event;
             System.out.print("Fahrenheit=" + tempEvent.getTemperatureInFahrenheit());
             System.out.print(" Celsius=" + tempEvent.getTemperatureInCelsius());
+            System.out.println(" valid=" + tempEvent.isValid());
             System.out.println(" Address=" + tempEvent.getAddress());
             for (TemperatureListener temperatureListener : temperatureListeners) {
-                temperatureListener.reportTemperature(tempEvent
-                        .getTemperatureInCelsius());
+                temperatureListener.reportTemperature(tempEvent.getAddress(),
+                        tempEvent.getTemperatureInCelsius(), tempEvent.isValid());
             }
             // Update temperature in UI
-            temperature = tempEvent.getTemperatureInCelsius();
+            temperatures.put(tempEvent.getAddress(), new TemperatureReading(tempEvent));
             update();
         } else {
             System.err.println("Unknown event: " + event);

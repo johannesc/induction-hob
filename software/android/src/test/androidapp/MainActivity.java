@@ -236,11 +236,16 @@ public class MainActivity extends Activity implements Gui {
     }
 
     @Override
-    public void setTemperature(final int temperature) {
+    public void setTemperature(int address, final int temperature, final boolean valid) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                temperatureTextView.setText(Integer.toString(temperature) + "\u2103");
+                //TODO handle more than one temperature sensor?
+                if (valid) {
+                    temperatureTextView.setText(Integer.toString(temperature) + "\u2103");
+                } else {
+                    temperatureTextView.setText("???" + "\u2103");
+                }
                 updateNotification();
             }
         });
