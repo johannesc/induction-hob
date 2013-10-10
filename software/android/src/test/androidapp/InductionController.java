@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import android.os.SystemClock;
+
 import control.InductionHob;
 
 public class InductionController implements EventCallback {
@@ -44,7 +46,7 @@ public class InductionController implements EventCallback {
     public interface Gui {
         public void setCurrentTargetPowerLevels(int[] powerLevels);
         public void setCurrentPowerLevels(int[] powerLevels);
-        public void setTemperature(int address, int temperature, boolean valid);
+        public void setTemperature(Map<Byte, TemperatureReading> temperatures);
         public void setHot(boolean[] hot);
         public void setPotPresent(boolean[] potPresent);
         public void setConnected(boolean connected);
@@ -167,11 +169,7 @@ public class InductionController implements EventCallback {
                 gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
                 gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
             }
-            Set<Entry<Byte, TemperatureReading>> entrySet = temperatures.entrySet();
-            for (Entry<Byte, TemperatureReading> entry : entrySet) {
-                gui.setTemperature(entry.getValue().address,
-                        entry.getValue().temperature, entry.getValue().valid);
-            }
+            gui.setTemperature(temperatures);
             gui.setConnected(connected);
         }
     }
@@ -254,6 +252,10 @@ public class InductionController implements EventCallback {
                 result = 8;
             } else if (temperature < 95) {
                 result = 6;
+            } else if (temperature < 96) {
+                result = 4;
+            } else if (temperature < 97) {
+                result = 2;
             } else {
                 boiled = true;
                 setFinished();
@@ -299,8 +301,10 @@ public class InductionController implements EventCallback {
 
     // From gui
     public void setPowerLevels(int[] powerLevels) {
-        for (int i = 0; i < powerLevels.length; i++) {
-            inductionHob.setTargetPowerLevel(i, powerLevels[i]);
+        if (inductionHob != null) {
+            for (int i = 0; i < powerLevels.length; i++) {
+                inductionHob.setTargetPowerLevel(i, powerLevels[i]);
+            }
         }
         update();
     }
@@ -316,15 +320,17 @@ public class InductionController implements EventCallback {
         }
     }
 
-    private class TemperatureReading {
+    public static class TemperatureReading {
         public final boolean valid;
         public final int temperature;
         public final byte address;
+        public final long reportedTime;
 
         public TemperatureReading(TemperatureDataEvent tempEvent) {
             temperature = tempEvent.getTemperatureInCelsius();
             valid = tempEvent.isValid();
             address = tempEvent.getAddress();
+            reportedTime = SystemClock.elapsedRealtime();
         }
     }
 

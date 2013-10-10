@@ -1,7 +1,12 @@
 package test.androidapp;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
+
 import ioio.lib.util.android.IOIOActivity;
 import test.androidapp.InductionController.Gui;
+import test.androidapp.InductionController.TemperatureReading;
 import test.androidapp.InductionService.InductionBinder;
 import android.app.Activity;
 import android.app.NotificationManager;
@@ -236,16 +241,24 @@ public class MainActivity extends Activity implements Gui {
     }
 
     @Override
-    public void setTemperature(int address, final int temperature, final boolean valid) {
+    public void setTemperature(final Map<Byte, TemperatureReading> temperatures) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                //TODO handle more than one temperature sensor?
-                if (valid) {
-                    temperatureTextView.setText(Integer.toString(temperature) + "\u2103");
-                } else {
-                    temperatureTextView.setText("???" + "\u2103");
+                StringBuilder tempString = new StringBuilder();
+
+                Set<Entry<Byte, TemperatureReading>> entrySet = temperatures.entrySet();
+                String sep = "";
+                for (Entry<Byte, TemperatureReading> entry : entrySet) {
+                    TemperatureReading value = entry.getValue();
+                    if (value.valid) {
+                        tempString.append(sep);
+                        tempString.append(Integer.toHexString(value.address & 0xff)).append(":");
+                        tempString.append(Integer.toString(value.temperature) + "\u2103");
+                        sep = " ";
+                    }
                 }
+                temperatureTextView.setText(tempString);
                 updateNotification();
             }
         });
