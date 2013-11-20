@@ -1,17 +1,14 @@
 package test.androidapp;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
 import ioio.lib.util.android.IOIOActivity;
+
+import java.util.List;
+
 import test.androidapp.InductionController.Gui;
 import test.androidapp.InductionController.TemperatureReading;
 import test.androidapp.InductionService.InductionBinder;
 import android.app.Activity;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -37,7 +34,8 @@ import android.widget.ToggleButton;
 public class MainActivity extends Activity implements Gui {
     protected static final String LOG_TAG = "INDUCTION";
 
-    private static final int NOTIFICATION_ID = 1;
+//    private static final int NOTIFICATION_ID = 1;
+    private InductionService inductionService;
 
     InductionController inductionController;
     private ToggleButton programButton;
@@ -62,7 +60,7 @@ public class MainActivity extends Activity implements Gui {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.w(LOG_TAG, "onCreate");
+        Log.w(LOG_TAG, "onCreate:getIntent()=" + getIntent());
         serviceIntent = new Intent(this, InductionService.class);
         super.onCreate(savedInstanceState);
         startService(serviceIntent);
@@ -125,7 +123,7 @@ public class MainActivity extends Activity implements Gui {
         return seekBar;
     }
 
-    private void createNotification() {
+/*    private void createNotification() {
         notificationBuilder =
                 new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_launcher)
@@ -134,21 +132,16 @@ public class MainActivity extends Activity implements Gui {
 
         Intent resultIntent = new Intent(this, this.getClass());
 
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(this.getClass());
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent =
-                stackBuilder.getPendingIntent(
-                    0,
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                );
+        resultIntent.setAction(Intent.ACTION_MAIN);
+        resultIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
+
         notificationBuilder.setContentIntent(resultPendingIntent);
-        notificationManager =
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
     }
-
-    private void removeNotification() {
+*/
+/*    private void removeNotification() {
         notificationManager.cancel(NOTIFICATION_ID);
     }
 
@@ -156,43 +149,67 @@ public class MainActivity extends Activity implements Gui {
         notificationBuilder.setContentText("Click to show " + temperatureTextView.getText());
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
     }
-
+*/
     @Override
     protected void onStart() {
         Log.w(LOG_TAG, "onStart");
         super.onStart();
         Log.w(LOG_TAG, "super.onStart done");
         Intent intent = new Intent(this, InductionService.class);
-        Log.w(LOG_TAG, "binding to sercice...");
+        Log.w(LOG_TAG, "binding to service...");
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-        createNotification();
+        //createNotification();
         Log.w(LOG_TAG, "onStart - done");
     }
 
     @Override
     protected void onStop() {
+        Log.w(LOG_TAG, "onStop");
         super.onStop();
         if (bound) {
             bound = false;
             unbindService(serviceConnection);
             if (isFinishing()) {
-                removeNotification();
+              // removeNotification();
             }
         }
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        Log.w(LOG_TAG, "onNewIntent!");
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (isFinishing()) {
             Log.w(LOG_TAG, "onDestroy - finishing - stopping servive");
             stopService(serviceIntent);
+        } else {
+            Log.w(LOG_TAG, "onDestroy - NOT finishing!");
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.w(LOG_TAG, "onPause");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.w(LOG_TAG, "onRestart!");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.w(LOG_TAG, "onResume!");
+    }
+
     private final ServiceConnection serviceConnection = new ServiceConnection() {
-
-        private InductionService inductionService;
-
         @Override
         public void onServiceDisconnected(ComponentName name) {
             inductionController.setGui(null);
@@ -241,25 +258,24 @@ public class MainActivity extends Activity implements Gui {
     }
 
     @Override
-    public void setTemperature(final Map<Byte, TemperatureReading> temperatures) {
+    public void setTemperature(final List<TemperatureReading> temperatures) {
+        System.out.println("setTemperature in UI");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 StringBuilder tempString = new StringBuilder();
 
-                Set<Entry<Byte, TemperatureReading>> entrySet = temperatures.entrySet();
                 String sep = "";
-                for (Entry<Byte, TemperatureReading> entry : entrySet) {
-                    TemperatureReading value = entry.getValue();
+                for (TemperatureReading value : temperatures) {
                     if (value.valid) {
                         tempString.append(sep);
-                        tempString.append(Integer.toHexString(value.address & 0xff)).append(":");
                         tempString.append(Integer.toString(value.temperature) + "\u2103");
                         sep = " ";
                     }
                 }
                 temperatureTextView.setText(tempString);
-                updateNotification();
+                //updateNotification();
+                inductionService.updateNotification("Click to show " + tempString);
             }
         });
     }
