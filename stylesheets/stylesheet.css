@@ -29,8 +29,20 @@ time, mark, audio, video {
   vertical-align: baseline;
 }
 
+figure {
+    display: table;
+    width: 1px;
+}
+figcaption { 
+    display: table-caption;
+    caption-side: bottom ;
+    font-style:italic;
+    font-size: 80%;
+}
+
+
 /* HTML5 display-role reset for older browsers */
-article, aside, details, figcaption, figure,
+article, aside, details,
 footer, header, hgroup, menu, nav, section {
   display: block;
 }
@@ -136,16 +148,10 @@ strong {
 img {
   position: relative;
   margin: 0 auto;
-  max-width: 739px;
-  padding: 5px;
-  margin: 10px 0 10px 0;
-  border: 1px solid #ebebeb;
+  max-width: 615px;
+  padding: 0px;
+  margin: 10px 0px 0px 0px;
 
-  box-shadow: 0 0 5px #ebebeb;
-  -webkit-box-shadow: 0 0 5px #ebebeb;
-  -moz-box-shadow: 0 0 5px #ebebeb;
-  -o-box-shadow: 0 0 5px #ebebeb;
-  -ms-box-shadow: 0 0 5px #ebebeb;
 }
 
 p img {

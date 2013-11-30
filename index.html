@@ -19,7 +19,7 @@
           <a id="forkme_banner" href="https://github.com/johannesc/induction-hob">View on GitHub</a>
 
           <h1 id="project_title">Reparing And Adding Bluetooth to my Electrolux EHD7660P Induction Cooker</h1>
-          <h2 id="project_tagline">Tagline</h2>
+          <h2 id="project_tagline"></h2>
 
             <section id="downloads">
               <a class="zip_download_link" href="https://github.com/johannesc/induction-hob/zipball/master">Download this project as a .zip file</a>
@@ -31,40 +31,181 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
 
-<img src="images/IOIO-and-adapter.jpg" /> <br/>
-<img src="images/ioio-adapter/ioio-adapter.svg" /> <br/>
-
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
-
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
-
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<style>
+p.caption {font-style:italic;}
+</style>
 
 <h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+The Beginning
+</h3><p>
+The whole thing started when my 6 year old induction cooker suddenly broke. While I was boiling rice a fuse blew. Resetting the fuse did not help. Since I had little to lose I unscrewed it and hoped to see some obviously broken components.
+</p>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<figure>
+    <img src='images/induction-hob-inside.jpg' alt='missing' />
+    <figcaption><p style="font-style:italic;">Inside of my induction hob after removing top glass.</p></figcaption>
+</figure>
 
+<figure>
+    <img src='images/induction-hob-inside-bare.jpg' alt='missing' />
+    <figcaption>Inside of my induction hob after removing zones and the inside cover. You can see the replaced IGBT down to to the right, they were different from the original ones and required silicon insulation.</figcaption>
+</figure>
+</p>
+
+</br>
+<p>
+Unfortunately I couldn’t find any so I turned to Internet. After some searching I found a  Swedish forum that described the same problem I had. The problem was that two IGBT:s and a rectifier had broke, this was easy to detect by measuring the resistance (there were none). After ordering spare parts (~$30) and some soldering my cooker was up and running again!
+</p>
 <h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+The Electronics Inside
+</h3><p>
+However I couldn't help to look a bit at the circuit boards, among some interesting things I found an Atmel ATMEGA32L which I am somewhat familiar with. I also saw that there was only three wires between the “keyboard” and the main power board. The keyboard had a NEC D78F0034AGK which I was not familiar with, but I managed to find the data sheet.
+</p>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<figure>
+    <img src='images/reverse-engineered/reversed-engineered.svg' alt='missing' />
+    <figcaption>Block Schematic of the Induction Hob.</figcaption>
+</figure>
 
+<figure>
+    <img src='images/keyboard-left-comments.jpg' alt='missing' width='200'"/>
+    <figcaption>Left "keyboard".</figcaption>
+</figure>
+<figure>
+    <img src='images/keyboard-right-comments.jpg' alt='missing' width='200'/>
+    <figcaption>Right "keyboard".</figcaption>
+</figure>
+
+<br/>
+
+
+<p>
+After tracing the wires a bit they seemed to go to the UART pins of the MCU through some transistors.
+</p>
+
+<figure>
+    <img src='images/reverse-engineered/reversed-engineered-controller.svg' alt='missing' />
+    <figcaption>Partial schematic of right "keyboard". On the top you can see how the signals to and from the UART is combined to one pin.</figcaption>
+</figure>
+
+<p>
+So I figured it couldn’t be too hard to intercept the data and figure out the protocol that was being used. If I did that I could connect my induction hob to my Android phone and control it from that. You might wonder why you want to control your induction hob from your phone. Everyone I have talked to about this project has asked that question. I guess that that is an indication that I know to few true hackers. I would like to turn the question around: Why are there no induction hobs on the market that you can control from your phone. They can easily cost more than $1000. If you added a <$5 Bluetooth chip to it you could download recipes with correct temperature curves and timing. Just take the Range kickstarter project and you can see that there are more people that would probably want something like this. I needed a way to automate the boiling of the milk for my morning porridge (mannagrynsgröt). If you have ever boiled milk you know how easy it is to burn and boil over the milk.
+</p>
 <h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+Let the Reverse Engineering Begin
+</h3><p>
+I ordered a Bus Pirate and while waiting for that I looked closer to the circuit boards (yes, I have unscrewed my cooker maybe 10 20 times by now) and soldered some wires so that I could connect my Bus Pirate once it arrived. When my Bus Pirate showed up I connected it and tried to figure out the communication parameters. This took me some time since I was not familiar with the bus pirate. I also had an old firmware that did not include the “Auto Baud Detection” macro. After trying to use the logic analyzer function to measure the bit length without any luck (it just gave me different bit length depending on the sample rate) I went on with trial and error. Some tests later I found out that the correct parameters was 9600bps, even parity and 1 stop bit. The “even parity” was the tricky thing here.</p>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<p>
+By pressing keys on the cooker and looking at the bytes passing by I could start to see a pattern. Along the way I implemented a parser in Java on my PC. This made it easier to see what bit and bites I hadn’t understood yet. The protocol sends packets which are acknowledged by the other side (not all of them). Every packet except the “ack” packets have a checksum. Both sides can initiate communication, so there is a risk of collisions, but the probability is quite low, and they can be detected by the missing “ack” packet and/or bad checksum.</p>
+<p>
+Before working I did not know how much logic that went into the keyboard and how much was in the power card. Was perhaps the keyboard just a dummy keyboard sending the key presses further on to the power card, or was it perhaps smarter. It turned out that it was the later case which was a bit of a problem. If I send a “full power on zone 1” from the PC the display on the keyboard wouldn’t update and after a few seconds the keyboard kept on repeating all power levels to the power card. This meant that I needed a way to simulate key presses to the keyboard.</p>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+<h3>The “Keyboards”</h3>
+<p>
+I started to examine the left and right keyboard which consists of two PCB’s. One with a microcontroller and one with some shift registers and an analog multiplexer. The shift registers were used to update the 7-segment numbers and one of them to select the analog input for the multiplexer. The touch input of the keyboard is implemented with an IR diode and phototransistor. When you put your finger close it will reflect the IR light. Somewhere here I realized that I needed an oscilloscope to be able to reverse engineer this part. I decided to go for a Rigol DS5210E.
+</p>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<figure>
+    <img src='images/reverse-engineered/reversed-engineered-left-display.svg' alt='missing' />
+    <figcaption>Simplified schematic of left keyboard.</figcaption>
+</figure>
+
+<p>
+With the help of my new oscilloscope I was able to see that the touch keys are scanned one by one in a sequence by using the 74HC595 shift registers and the HCF4051 analog multiplexers. Every phototransistor is scanned for about 5ms and the IR LED is turned on for about 1ms of this time. This makes it possible to detect and compensate for ambient light and reflections from the induction hob itself. If a reflection is detected it will prolong the scan period to approximately 11ms and turn on the IR LED two more times. All phototransistors, except “main power” one, are scanned using the same analog input.
+</p>
+
+<figure>
+    <img src='images/oscilloscope-screenshots/normal.jpg' alt='missing' />
+    <figcaption>Screenshot when no finger is hold in front of the photo transistor. Channel 1 is the voltage on one of the phototransistors, you can see the scan period is about 5ms. Channel 2 is the voltage on the IR LED which is turned for about 1ms. You also see that the phototransistor reacts to the reflection.</figcaption>
+</figure>
+
+<figure>
+    <img src='images/oscilloscope-screenshots/pressed.jpg' alt='missing' />
+    <figcaption>Screenshot when I hold a finger in front of the phototransistor. You can see that channel 2 dips a bit more and that the scan is prolonged to about 11ms with another two pulses.</figcaption>
+</figure>
+
+<figure>
+    <img src='images/oscilloscope-screenshots/all.jpg' alt='missing' />
+    <figcaption>Screenshot showing all touch buttons being scanned. Here there is more ambient light which makes the curve less ideal.</figcaption>
+</figure>
+
+<p>
+I could now fake key presses by adding an extra transistor over the phototransistor and send a pulse at the same time as the IR LED is turned on. In order to avoid soldering one transistor for each touch button I connected the transistor to the analog multiplexed line and added a shift register so that I could detect which button that were being scanned. All signals were available on the cable between the two keyboards.
+</p>
+<p>
+I decided to use a IOIO-OTG as my hardware platform. It can easily be connected with Bluetooth or cable to an Android phone or a PC and the firmware is open source and easy to modify. The IOIO can be fully controlled from the PC/Android, but the speed was too high to correctly read the shift register and set the output so I modified the firmware and added commands to do this. I also managed to measure the scan period which means that key presses being done on the induction hob itself are being detected. This was needed so that a control being made on the Android application can be aborted if someone presses a key on the induction hob.
+</p>
+<h3>Adding temperature reading support</h3>
+<p>
+The missing part for my project was now a temperature sensor. It would of course be possible to calculate the temperature if the initial temperature, the volume and effect was known, but it is easier and safer to measure it. A 433MHz wireless barbecue thermometer and a 433MHz radio module was purchased. The inside of the barbecue thermometer was easy to understand where the radio module was separated and connected with 3 cables, Vcc, GND and data.
+</p>
+<figure>
+    <img src='images/rubicsson.jpg' alt='missing' />
+    <figcaption>The inside of the Rubicson barbeque thermometer.</figcaption>
+</figure>
+
+<p>
+I couldn’t find anyone information about the protocol, but by looking at the oscilloscope it became clear that a 1-bit was sent with a pulse width of ~4.6ms and a 0-bit with a pulse width of ~2.4ms. The whole packet consists of a special start signature of 4 short pulses (=3 0-bits) then a 8.6ms pause followed by 36 bits. Each temperature reading was sent 6 times. The signal on the receiving radio module looked the same but with some additional noise which could be filtered out by measuring the timing.
+</p>
+
+<figure>
+    <img src='images/oscilloscope-screenshots/oscilloscope-temp-1.jpg' alt='missing' />
+    <figcaption>Screenshot of a burst of temperature transmissions (sent 6 times) measured on the PCB of the transmitter.</figcaption>
+</figure>
+
+<figure>
+    <img src='images/oscilloscope-screenshots/oscilloscope-temp-full.jpg' alt='missing' />
+    <figcaption>Screenshot of one packet, you can see the start sequence to the left and the beginning of next packet to the right.</figcaption>
+</figure>
+
+<p>
+Once again I modified the IOIO firmware and added support for reading temperature sensor data from the radio module. Then it was easy to write down the data being read and compare it to the known value. There were two tricky things about this, the temperature was sent in Fahrenheit with an offset of 90 degrees (I am a Celsius guy) and the data were swapped nibble-wise. I.e. it looks like this:
+<p>
+<pre>
+   %00111100 00000000 01110011 11011011 0001
+    tttttttt tttt              aaaaaaaa
+    32107654 BA98
+</pre>
+<p>
+“t” above is the temperature data, and “a” is probably an address that seems to change every power cycle making it possible to use several thermometers at the same time. The unmarked bits are probably checksum, but I haven’t bothered to figure them out yet.
+</p> 
+
+<h3>Putting the Whole Thing Together</h3>
+<p>
+So now I had everything I needed in order to implement the whole thing: I could inject key presses. I could detect the current power level, I could detect if someone were pressing a key on the induction hob and I could measure the temperature of the milk.
+</p>
+<figure>
+    <img src='images/ioio-adapter.svg' alt='missing' />
+    <figcaption>Most of the IOIO adapter schematic (the radio module and some capacitors are missing).</figcaption>
+</figure>
+
+
+
+<h3>Android Application</h3>
+</p>
+I wrapped all code together and implemented a very basic temperature controller. The last problem was writing the user interface. I don’t like writing user interfaces and they usually ends of looking quite ugly. This time was no exception, but my app gets the job done. Finally I can now boil the milk for my breakfast “mannagrynsgröt” using my Android phone.
+</p>
+
+<h3>Summary</h3>
+<p>
+There are lot more to it than mentioned in this text. E.g. A couple of times I have thought that I fried my induction hob: Once I dropped some solder on the PCB without noticing it until I discovered that one zone did not work anymore. Another time I mixed up data and GND pins which caused the induction hob to stop working until next morning (I am still not sure what made it come alive again). This project (including writing this paper) took me more than a year, it is hard to find time when you have 3 kids (the 3rd came during the project) and are working full time (in the beginning I was actually on parental leave, but that does not mean that you have a lot more time to spare). Sometimes it was also not so popular to find the kitchen like the image below when it was time to cook dinner.
+</p>
+
+<h3>The Future</h3>
+<p>
+As most projects like these they tend to never be completed. Below are some things that I might do in the future.
+Figure out the checksum part of the temperature sensor.</br>
+Write a better (PID?) temperature controller. </br>
+Better looking UI with learn functionality, different programs, temperature curves etc.</br>
+Create a proper PCB.
+<p>
+
+<h3>Source Code</h3>
+All source code is available from:<br/>
+<a href="https://github.com/johannesc/induction-hob">https://github.com/johannesc/induction-hob</a><br/>
+<a href="https://github.com/johannesc/ioio">https://github.com/johannesc/ioio</a><br/>
       </section>
     </div>
 
