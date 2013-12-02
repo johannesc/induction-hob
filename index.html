@@ -90,7 +90,7 @@ After tracing the wires a bit they seemed to go to the UART pins of the MCU thro
 </figure>
 
 <p>
-So I figured it couldn’t be too hard to intercept the data and figure out the protocol that was being used. If I did that I could connect my induction hob to my Android phone and control it from that. You might wonder why you want to control your induction hob from your phone. Everyone I have talked to about this project has asked that question. I guess that that is an indication that I know to few true hackers. I would like to turn the question around: Why are there no induction hobs on the market that you can control from your phone. They can easily cost more than $1000. If you added a <$5 Bluetooth chip to it you could download recipes with correct temperature curves and timing. Just take the Range kickstarter project and you can see that there are more people that would probably want something like this. I needed a way to automate the boiling of the milk for my morning porridge (mannagrynsgröt). If you have ever boiled milk you know how easy it is to burn and boil over the milk.
+So I figured it couldn’t be too hard to intercept the data and figure out the protocol that was being used. If I did that I could connect my induction hob to my Android phone and control it from that. You might wonder why you want to control your induction hob from your phone. Everyone I have talked to about this project has asked that question. I guess that that is an indication that I know to few true hackers. I would like to turn the question around: Why are there no induction hobs on the market that you can control from your phone. They can easily cost more than $1000. If you added a <$5 Bluetooth chip to it you could download recipes with correct temperature curves and timing. Just take the <a href="http://www.kickstarter.com/projects/supermechanical/range-smart-thermometer-smarter-cook">Range kickstarter project</a> and you can see that there are more people that would probably want something like this. I needed a way to automate the boiling of the milk for my morning porridge (mannagrynsgröt). If you have ever boiled milk you know how easy it is to burn and boil over the milk.
 </p>
 <h3>
 Let the Reverse Engineering Begin
@@ -192,6 +192,12 @@ I wrapped all code together and implemented a very basic temperature controller.
 <p>
 There are lot more to it than mentioned in this text. E.g. A couple of times I have thought that I fried my induction hob: Once I dropped some solder on the PCB without noticing it until I discovered that one zone did not work anymore. Another time I mixed up data and GND pins which caused the induction hob to stop working until next morning (I am still not sure what made it come alive again). This project (including writing this paper) took me more than a year, it is hard to find time when you have 3 kids (the 3rd came during the project) and are working full time (in the beginning I was actually on parental leave, but that does not mean that you have a lot more time to spare). Sometimes it was also not so popular to find the kitchen like the image below when it was time to cook dinner.
 </p>
+
+<figure>
+    <img src='images/reverse-engineering-afternoon.jpg' alt='missing' />
+    <figcaption>A typical reverse engineering afternoon in my kitchen.</figcaption>
+</figure>
+
 
 <h3>The Future</h3>
 <p>
