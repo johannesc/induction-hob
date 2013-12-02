@@ -55,7 +55,7 @@ The whole thing started when my 6 year old induction cooker suddenly broke. Whil
 
 </br>
 <p>
-Unfortunately I couldn’t find any so I turned to Internet. After some searching I found a  Swedish forum that described the same problem I had. The problem was that two IGBT:s and a rectifier had broke, this was easy to detect by measuring the resistance (there were none). After ordering spare parts (~$30) and some soldering my cooker was up and running again!
+Unfortunately I couldn’t find any so I turned to Internet. After some searching I found a  <a href="http://elektronikforumet.com/forum/viewtopic.php?f=2&t=46035">Swedish forum</a> that described the same problem I had. The problem was that two IGBT:s and a rectifier had broke, this was easy to detect by measuring the resistance (there were none). After ordering spare parts (~$30) and some soldering my cooker was up and running again!
 </p>
 <h3>
 The Electronics Inside
@@ -95,12 +95,12 @@ So I figured it couldn’t be too hard to intercept the data and figure out the 
 <h3>
 Let the Reverse Engineering Begin
 </h3><p>
-I ordered a Bus Pirate and while waiting for that I looked closer to the circuit boards (yes, I have unscrewed my cooker maybe 10 20 times by now) and soldered some wires so that I could connect my Bus Pirate once it arrived. When my Bus Pirate showed up I connected it and tried to figure out the communication parameters. This took me some time since I was not familiar with the bus pirate. I also had an old firmware that did not include the “Auto Baud Detection” macro. After trying to use the logic analyzer function to measure the bit length without any luck (it just gave me different bit length depending on the sample rate) I went on with trial and error. Some tests later I found out that the correct parameters was 9600bps, even parity and 1 stop bit. The “even parity” was the tricky thing here.</p>
+I ordered a <a href="http://dangerousprototypes.com/docs/Bus_Pirate">Bus Pirate</a> and while waiting for it to arrive I looked closer to the circuit boards (yes, I have unscrewed my cooker > 20 times by now) and soldered some wires. Once it showed up I connected it and tried to figure out the communication parameters. This took me some time since I was not familiar with the bus pirate. I also had an old firmware that did not include the “Auto Baud Detection” macro. After trying to use the logic analyzer function to measure the bit length without any luck (it just gave me different bit length depending on the sample rate) I went on with trial and error. Some tests later I found out that the correct parameters was 9600bps, even parity and 1 stop bit. The “even parity” was the tricky thing here.</p>
 
 <p>
-By pressing keys on the cooker and looking at the bytes passing by I could start to see a pattern. Along the way I implemented a parser in Java on my PC. This made it easier to see what bit and bites I hadn’t understood yet. The protocol sends packets which are acknowledged by the other side (not all of them). Every packet except the “ack” packets have a checksum. Both sides can initiate communication, so there is a risk of collisions, but the probability is quite low, and they can be detected by the missing “ack” packet and/or bad checksum.</p>
+By pressing keys on the cooker and looking at the bytes passing by I could start to see a pattern. Along the way I implemented a parser in Java on my PC. This made it easier to see what bit and bytes I hadn’t understood yet. The protocol sends packets which are acknowledged by the other side (not all of them). Every packet except the “ack” packets have a checksum. Both sides can initiate communication, so there is a risk of collisions, but the probability is quite low, and they can be detected by the missing “ack” packet and/or bad checksum.</p>
 <p>
-Before working I did not know how much logic that went into the keyboard and how much was in the power card. Was perhaps the keyboard just a dummy keyboard sending the key presses further on to the power card, or was it perhaps smarter. It turned out that it was the later case which was a bit of a problem. If I send a “full power on zone 1” from the PC the display on the keyboard wouldn’t update and after a few seconds the keyboard kept on repeating all power levels to the power card. This meant that I needed a way to simulate key presses to the keyboard.</p>
+Before figuring out this protocol I did not know how much logic that went into the keyboard and how much was in the power card. Was perhaps the keyboard just a dummy keyboard sending the key presses further on to the power card, or was it perhaps smarter. It turned out that it was the later case which was a bit of a problem. If I send a “full power on zone 1” from the PC the display on the keyboard wouldn’t update and after a few seconds the keyboard kept on repeating all power levels to the power card. This meant that I needed a way to simulate key presses to the keyboard.</p>
 
 <h3>The “Keyboards”</h3>
 <p>
@@ -152,12 +152,12 @@ I couldn’t find anyone information about the protocol, but by looking at the o
 
 <figure>
     <img src='images/oscilloscope-screenshots/oscilloscope-temp-1.jpg' alt='missing' />
-    <figcaption>Screenshot of a burst of temperature transmissions (sent 6 times) measured on the PCB of the transmitter.</figcaption>
+    <figcaption>Screenshot of one packet, you can see the start sequence to the left and the beginning of next packet to the right.</figcaption>
 </figure>
 
 <figure>
     <img src='images/oscilloscope-screenshots/oscilloscope-temp-full.jpg' alt='missing' />
-    <figcaption>Screenshot of one packet, you can see the start sequence to the left and the beginning of next packet to the right.</figcaption>
+    <figcaption>Screenshot of a burst of temperature transmissions (sent 6 times) measured on the PCB of the transmitter.</figcaption>
 </figure>
 
 <p>
@@ -188,6 +188,11 @@ So now I had everything I needed in order to implement the whole thing: I could 
 I wrapped all code together and implemented a very basic temperature controller. The last problem was writing the user interface. I don’t like writing user interfaces and they usually ends of looking quite ugly. This time was no exception, but my app gets the job done. Finally I can now boil the milk for my breakfast “mannagrynsgröt” using my Android phone.
 </p>
 
+<figure>
+    <img src='images/screenshot-induction-app.png' alt='missing' />
+    <figcaption>Screenshot of the Android application.</figcaption>
+</figure>
+
 <h3>Summary</h3>
 <p>
 There are lot more to it than mentioned in this text. E.g. A couple of times I have thought that I fried my induction hob: Once I dropped some solder on the PCB without noticing it until I discovered that one zone did not work anymore. Another time I mixed up data and GND pins which caused the induction hob to stop working until next morning (I am still not sure what made it come alive again). This project (including writing this paper) took me more than a year, it is hard to find time when you have 3 kids (the 3rd came during the project) and are working full time (in the beginning I was actually on parental leave, but that does not mean that you have a lot more time to spare). Sometimes it was also not so popular to find the kitchen like the image below when it was time to cook dinner.
@@ -202,10 +207,12 @@ There are lot more to it than mentioned in this text. E.g. A couple of times I h
 <h3>The Future</h3>
 <p>
 As most projects like these they tend to never be completed. Below are some things that I might do in the future.
-Figure out the checksum part of the temperature sensor.</br>
-Write a better (PID?) temperature controller. </br>
-Better looking UI with learn functionality, different programs, temperature curves etc.</br>
-Create a proper PCB.
+<ul>
+<li>Figure out the checksum part of the temperature sensor.</li>
+<li> Write a better (PID?) temperature controller. </li>
+<li> Better looking UI with learn functionality, different programs, temperature curves etc.</li>
+<li> Create a proper PCB.</li>
+</ul>
 <p>
 
 <h3>Source Code</h3>
