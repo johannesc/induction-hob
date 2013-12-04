@@ -33,10 +33,6 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
 
-<style>
-p.caption {font-style:italic;}
-</style>
-
 <h3>
 The Beginning
 </h3><p>
@@ -52,11 +48,10 @@ The whole thing started when my 6 year old induction cooker suddenly broke. Whil
     <img src='images/induction-hob-inside-bare.jpg' alt='missing' />
     <figcaption>Inside of my induction hob after removing zones and the inside cover. You can see the replaced IGBT down to to the right, they were different from the original ones and required silicon insulation.</figcaption>
 </figure>
-</p>
 
-</br>
+<br/>
 <p>
-Unfortunately I couldn’t find any so I turned to Internet. After some searching I found a  <a href="http://elektronikforumet.com/forum/viewtopic.php?f=2&t=46035">Swedish forum</a> that described the same problem I had. The problem was that two IGBT:s and a rectifier had broke, this was easy to detect by measuring the resistance (there were none). After ordering spare parts (~$30) and some soldering my cooker was up and running again!
+Unfortunately I couldn’t find any so I turned to Internet. After some searching I found a  <a href="http://elektronikforumet.com/forum/viewtopic.php?f=2&amp;t=46035">Swedish forum</a> that described the same problem I had. The problem was that two IGBT:s and a rectifier had broke, this was easy to detect by measuring the resistance (there were none). After ordering spare parts (~$30) and some soldering my cooker was up and running again!
 </p>
 <h3>
 The Electronics Inside
@@ -70,16 +65,15 @@ However I couldn't help to look a bit at the circuit boards, among some interest
 </figure>
 
 <figure>
-    <img src='images/keyboard-left-comments.jpg' alt='missing' width='200'"/>
+    <img src='images/keyboard-left-comments.jpg' alt='missing' width='200' />
     <figcaption>Left "keyboard".</figcaption>
 </figure>
 <figure>
-    <img src='images/keyboard-right-comments.jpg' alt='missing' width='200'/>
+    <img src='images/keyboard-right-comments.jpg' alt='missing' width='200' />
     <figcaption>Right "keyboard".</figcaption>
 </figure>
 
 <br/>
-
 
 <p>
 After tracing the wires a bit they seemed to go to the UART pins of the MCU through some transistors.
@@ -91,7 +85,7 @@ After tracing the wires a bit they seemed to go to the UART pins of the MCU thro
 </figure>
 
 <p>
-So I figured it couldn’t be too hard to intercept the data and figure out the protocol that was being used. If I did that I could connect my induction hob to my Android phone and control it from that. You might wonder why you want to control your induction hob from your phone. Everyone I have talked to about this project has asked that question. I guess that that is an indication that I know to few true hackers. I would like to turn the question around: Why are there no induction hobs on the market that you can control from your phone. They can easily cost more than $1000. If you added a <$5 Bluetooth chip to it you could download recipes with correct temperature curves and timing. Just take the <a href="http://www.kickstarter.com/projects/supermechanical/range-smart-thermometer-smarter-cook">Range kickstarter project</a> and you can see that there are more people that would probably want something like this. I needed a way to automate the boiling of the milk for my morning porridge (mannagrynsgröt). If you have ever boiled milk you know how easy it is to burn and boil over the milk.
+So I figured it couldn’t be too hard to intercept the data and figure out the protocol that was being used. If I did that I could connect my induction hob to my Android phone and control it from that. You might wonder why you want to control your induction hob from your phone. Everyone I have talked to about this project has asked that question. I guess that that is an indication that I know to few true hackers. I would like to turn the question around: Why are there no induction hobs on the market that you can control from your phone. They can easily cost more than $1000. If you added a &lt;$5 Bluetooth chip to it you could download recipes with correct temperature curves and timing. Just take the <a href="http://www.kickstarter.com/projects/supermechanical/range-smart-thermometer-smarter-cook">Range kickstarter project</a> and you can see that there are more people that would probably want something like this. I needed a way to automate the boiling of the milk for my morning porridge (mannagrynsgröt). If you have ever boiled milk you know how easy it is to burn and boil over the milk.
 </p>
 <h3>
 Let the Reverse Engineering Begin
@@ -185,7 +179,7 @@ So now I had everything I needed in order to implement the whole thing: I could 
 
 
 <h3>Android Application</h3>
-</p>
+<p>
 I wrapped all code together and implemented a very basic temperature controller. The last problem was writing the user interface. I don’t like writing user interfaces and they usually ends of looking quite ugly. This time was no exception, but my app gets the job done. Finally I can now boil the milk for my breakfast “mannagrynsgröt” using my Android phone.
 </p>
 
