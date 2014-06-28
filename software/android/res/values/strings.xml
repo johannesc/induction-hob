@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">IOIO-InductionAndroidApp</string>
+    <string name="app_name">InductionHob</string>
     <string name="togglebutton">ToggleButton</string>
     <string name="left_back_text">LB</string>
     <string name="left_front_text">LF</string>

@@ -13,6 +13,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
@@ -123,33 +125,6 @@ public class MainActivity extends Activity implements Gui {
         return seekBar;
     }
 
-/*    private void createNotification() {
-        notificationBuilder =
-                new NotificationCompat.Builder(this)
-                .setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("Induction Hob")
-                .setContentText("Click to show");
-
-        Intent resultIntent = new Intent(this, this.getClass());
-
-        resultIntent.setAction(Intent.ACTION_MAIN);
-        resultIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
-
-        notificationBuilder.setContentIntent(resultPendingIntent);
-        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
-    }
-*/
-/*    private void removeNotification() {
-        notificationManager.cancel(NOTIFICATION_ID);
-    }
-
-    private void updateNotification() {
-        notificationBuilder.setContentText("Click to show " + temperatureTextView.getText());
-        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
-    }
-*/
     @Override
     protected void onStart() {
         Log.w(LOG_TAG, "onStart");
@@ -285,9 +260,10 @@ public class MainActivity extends Activity implements Gui {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-//                for (int i = 0; i < hot.length; i++) {
-//                    plateSelector[i].setBackgroundColor(hot[i] ? Color.RED : Color.GREEN);
-//                }
+                for (int zone = 0; zone < hot.length; zone++) {
+                    int thumbId =  hot[zone] ? R.drawable.thumb_hot : R.drawable.thumb_cool;
+                    seekBars[zone].setThumb(getResources().getDrawable(thumbId)); //TODO problem
+                }
             }
         });
     }
@@ -297,9 +273,10 @@ public class MainActivity extends Activity implements Gui {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-//                for (int i = 0; i < potPresent.length; i++) {
-//                    plateSelector[i].setTextColor(potPresent[i] ? Color.YELLOW: Color.RED);
-//                }
+                for (int zone = 0; zone < potPresent.length; zone++) {
+                    int color = potPresent[zone] ? Color.GREEN : Color.RED;
+                    seekBars[zone].setBackgroundColor(color);
+                }
             }
         });
     }
