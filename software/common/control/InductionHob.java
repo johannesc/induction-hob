@@ -143,6 +143,7 @@ public class InductionHob implements Induction.EventCallback, Runnable {
             if (isPowered()) {
                 if (!userPressed) {
                     if (safeToPressTime < System.currentTimeMillis()) {
+                        userPressedClock = false;
                         return true;
                     } else {
                         //System.out.println("User recently released a button, lets wait more");
@@ -183,7 +184,6 @@ public class InductionHob implements Induction.EventCallback, Runnable {
                 safeToPressTime = System.currentTimeMillis();
                 if (userPressedClock) {
                     safeToPressTime += MS_TO_WAIT_WHEN_CLOCK_WAS_PRESSED;
-                    userPressedClock = false;
                     System.out.println("Waiting extra time since clock was pressed");
                 } else {
                     safeToPressTime += MS_TO_WAIT_AFTER_USER_RELEASED;
