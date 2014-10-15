@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="300dp"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:layout_weight="1">
 
     <LinearLayout
-        android:layout_width="fill_parent"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:weightSum="12"
         android:visibility="visible"
         android:layout_margin="0dp"
+        android:background="@android:color/white"
         >
         <TextView
             android:layout_width="wrap_content"
@@ -97,13 +98,13 @@
             android:text="P"
             android:layout_weight="1"
             android:textAppearance="?android:attr/textAppearanceMedium" />
-        </LinearLayout>
+    </LinearLayout>
     <SeekBar
         android:id="@+id/seekBar"
-        android:layout_width="match_parent"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:max="11"
-        android:progressDrawable="@drawable/seekbar_progress"
-        android:thumb="@drawable/thumb_cool"/>
+        android:background="@android:color/white"
+        />
 </LinearLayout>

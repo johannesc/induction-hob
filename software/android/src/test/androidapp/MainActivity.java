@@ -2,11 +2,13 @@ package test.androidapp;
 
 import ioio.lib.util.android.IOIOActivity;
 
+import java.util.Iterator;
 import java.util.List;
 
 import test.androidapp.InductionController.Gui;
 import test.androidapp.InductionController.TemperatureReading;
 import test.androidapp.InductionService.InductionBinder;
+import test.androidapp.ui.Zone;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
@@ -14,13 +16,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.view.Display;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -34,7 +41,7 @@ import android.widget.ToggleButton;
  * HelloIOIOPower example.
  */
 public class MainActivity extends Activity implements Gui {
-    protected static final String LOG_TAG = "INDUCTION";
+    public static final String LOG_TAG = "INDUCTION";
 
 //    private static final int NOTIFICATION_ID = 1;
     private InductionService inductionService;
@@ -43,10 +50,9 @@ public class MainActivity extends Activity implements Gui {
     private ToggleButton programButton;
 
     int[] powerLevels = { 0, 0, 0, 0 };
-    //RadioButton[] plateSelector = new RadioButton[4];
-    //SeekBar slider;
-    //int currentPlate = 0;
-    private final SeekBar[] seekBars = new SeekBar[4];
+
+    int selectedZone = -1;
+    private final Zone[] zones = new Zone[4];
 
     private TextView temperatureTextView;
 
@@ -67,6 +73,36 @@ public class MainActivity extends Activity implements Gui {
         super.onCreate(savedInstanceState);
         startService(serviceIntent);
         setContentView(R.layout.activity_main);
+
+        final Zone leftBackZone = (Zone) findViewById(R.id.leftBackZone);
+        final Zone rightBackZone = (Zone) findViewById(R.id.rightBackZone);
+        final Zone leftFrontZone = (Zone) findViewById(R.id.leftFrontZone);
+        final Zone rightFrontZone = (Zone) findViewById(R.id.rightFrontZone);
+
+        zones[0] = leftFrontZone;
+        zones[1] = leftBackZone;
+        zones[2] = rightBackZone;
+        zones[3] = rightFrontZone;
+
+        Zone.ChangeListener changeListener = new Zone.ChangeListener() {
+            @Override
+            public void onLevelChanged(Zone zone, int level) {
+                int zoneIndex;
+                for (zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
+                    if (zone == zones[zoneIndex]) {
+                        break;
+                    }
+                }
+                selectedZone = zoneIndex;
+                Log.w(LOG_TAG, "level = " + level);
+                powerLevels[zoneIndex] = level;
+                inductionController.setPowerLevels(powerLevels);
+            }
+        };
+        for (Zone zone : zones) {
+            zone.setChangeListener(changeListener);
+        }
+
         programButton = (ToggleButton) findViewById(R.id.startStopProgramButton);
         temperatureTextView = (TextView) findViewById(R.id.textViewTemperature);
         connectedBox = (CheckBox) findViewById(R.id.connectedBox);
@@ -74,55 +110,15 @@ public class MainActivity extends Activity implements Gui {
         programButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //TODO dont hardcode zone
-                inductionController.startStopProgram(1,
-                        programButton.isChecked());
-                programRunning[1] = programButton.isChecked();
+                if (selectedZone != -1) {
+                    inductionController.startStopProgram(selectedZone,
+                            programButton.isChecked());
+                    programRunning[1] = programButton.isChecked();
+                }
             }
         });
 
-        seekBars[0] = getSeekBar(R.id.leftFront);
-        seekBars[1] = getSeekBar(R.id.leftBack);
-        seekBars[2] = getSeekBar(R.id.rightBack);
-        seekBars[3] = getSeekBar(R.id.rightFront);
-
-        SeekBar.OnSeekBarChangeListener seekListener = new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress,
-                    boolean fromUser) {
-                int zone;
-                for (zone = 0; zone < seekBars.length; zone++) {
-                    if (seekBar == seekBars[zone]) {
-                        break;
-                    }
-                }
-                Log.w(LOG_TAG, "progress = " + progress + " fromUser="
-                        + fromUser);
-                if (fromUser) {
-                    powerLevels[zone] = progress;
-                    inductionController.setPowerLevels(powerLevels);
-                }
-            }
-        };
-
-        for (SeekBar seekBar : seekBars) {
-            seekBar.setOnSeekBarChangeListener(seekListener);
-        }
         Log.w(LOG_TAG, "onCreat - donee");
-    }
-
-    private SeekBar getSeekBar(int viewId) {
-        View view = findViewById(viewId);
-        SeekBar seekBar = (SeekBar) view.findViewById(R.id.seekBar);
-        return seekBar;
     }
 
     @Override
@@ -217,7 +213,7 @@ public class MainActivity extends Activity implements Gui {
             public void run() {
                 for (int zone = 0; zone < powerLevels.length; zone++) {
                     int level = powerLevels[zone];
-                    seekBars[zone].setSecondaryProgress(level);
+                    zones[zone].setCurrentLevel(level);
                 }
                 //programButton.setChecked(programRunning[currentPlate]);
             }
@@ -228,7 +224,7 @@ public class MainActivity extends Activity implements Gui {
     public void setCurrentTargetPowerLevels(int[] powerLevels) {
         for (int zone = 0; zone < powerLevels.length; zone++) {
             int level = powerLevels[zone];
-            seekBars[zone].setProgress(level);
+            // TODO not yet supported in new Zone component
         }
     }
 
@@ -261,8 +257,7 @@ public class MainActivity extends Activity implements Gui {
             @Override
             public void run() {
                 for (int zone = 0; zone < hot.length; zone++) {
-                    int thumbId =  hot[zone] ? R.drawable.thumb_hot : R.drawable.thumb_cool;
-                    seekBars[zone].setThumb(getResources().getDrawable(thumbId)); //TODO problem
+                    // TODO not yet supported by the Zone component
                 }
             }
         });
@@ -275,7 +270,7 @@ public class MainActivity extends Activity implements Gui {
             public void run() {
                 for (int zone = 0; zone < potPresent.length; zone++) {
                     int color = potPresent[zone] ? Color.GREEN : Color.RED;
-                    seekBars[zone].setBackgroundColor(color);
+                    // TODO not yet supported by the Zone component
                 }
             }
         });
