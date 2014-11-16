@@ -18,7 +18,6 @@ import ioio.lib.util.BaseIOIOLooper;
 import ioio.lib.util.IOIOLooper;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -30,25 +29,30 @@ import java.util.Set;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
+import android.util.Log;
 import control.InductionHob;
 
 public class InductionController implements EventCallback {
 
     private static final int CHECK_TEMPERATURES = 42;
     private static final long MAX_TEMPERATURE_AGE = 60l*1000;
+    private static final String LOG_TAG = "INDUCTION";
     private InductionHob inductionHob;
-    private final List<TemperatureListener> temperatureListeners =
-            new ArrayList<TemperatureListener>();
 
-    private Gui gui;
+    private final List<Gui> guis = new ArrayList<Gui>();
     private final Map<Byte, TemperatureReading> temperatures =
             new LinkedHashMap<Byte, TemperatureReading>();
 
-    private final PowerLevelController[] powerControllers = new PowerLevelController[4];
+    private final ZoneController[] powerControllers = new ZoneController[4];
 
     private TemperatureSensor tempSensor;
     public boolean connected;
     LooperThread looperThread = new LooperThread();
+
+    public enum ProgramType {
+        MILK,
+        TARGET_TEMP
+    };
 
     public interface Gui {
         public void setCurrentTargetPowerLevels(int[] powerLevels);
@@ -57,14 +61,16 @@ public class InductionController implements EventCallback {
         public void setHot(boolean[] hot);
         public void setPotPresent(boolean[] potPresent);
         public void setConnected(boolean connected);
-        public void programDone(int zone);
+        public void programRunning(ZoneController[] programs);
+        public void setIsPowered(boolean powered);
+        public void setUnusedTemps(List<TemperatureReading> unused);
     }
 
     public InductionController() {
     }
 
-    public void setGui(Gui gui) {
-        this.gui = gui;
+    public void addGui(Gui gui) {
+        this.guis.add(gui);
         update();
     }
 
@@ -171,12 +177,27 @@ public class InductionController implements EventCallback {
     }
 
     public void update() {
-        if (gui != null) {
+        //TODO synchronize?
+        ZoneController programs[] = new ZoneController[4];
+        Map<Byte, TemperatureReading> unusedTemperatures = new HashMap<Byte, TemperatureReading>();
+        unusedTemperatures.putAll(temperatures);
+
+        for (int zone = 0; zone < powerControllers.length; zone++) {
+            programs[zone] = powerControllers[zone];
+            if (powerControllers[zone] != null) {
+                Set<Byte> sensors = powerControllers[zone].getUsedSensorAddresses();
+                for (Byte sensor : sensors) {
+                    unusedTemperatures.remove(sensor);
+                }
+            }
+        }
+        for (Gui gui : guis) {
             if (inductionHob != null) {
                 gui.setHot(inductionHob.getHot());
                 gui.setPotPresent(inductionHob.getPotPresent());
                 gui.setCurrentPowerLevels(inductionHob.getCurrenPowerLevels());
                 gui.setCurrentTargetPowerLevels(inductionHob.getTargetPowerLevels());
+                gui.setIsPowered(inductionHob.isPowered());
             }
             System.out.println("Telling ui to update temperatures");
             List<TemperatureReading> temps = new ArrayList<TemperatureReading>();
@@ -185,9 +206,12 @@ public class InductionController implements EventCallback {
                     temps.add(tempReading);
                 }
             }
+            List<TemperatureReading> unused = new ArrayList<TemperatureReading>(unusedTemperatures.values());
 
             gui.setTemperature(temps);
+            gui.setUnusedTemps(unused);
             gui.setConnected(connected);
+            gui.programRunning(programs);
         }
     }
 
@@ -221,6 +245,7 @@ public class InductionController implements EventCallback {
     interface PowerLevelController {
         public void start();
         public void stop();
+        public List<TemperatureReading> getTemperatures();
     }
 
     class LooperThread extends Thread {
@@ -235,7 +260,7 @@ public class InductionController implements EventCallback {
                 switch(msg.what) {
                     case CHECK_TEMPERATURES:
                         System.out.println("Checking if any temp sensors are gone!");
-                        clearOldSensors();
+                        broadcastSensors();
                         break;
                     case QUIT:
                         //TODO quitSafely?
@@ -262,165 +287,62 @@ public class InductionController implements EventCallback {
         }
     }
 
-    class MilkBoilerController implements PowerLevelController, TemperatureListener {
-        private final Map<Byte, TemperatureReading> tempSensors =
-                new HashMap<Byte, TemperatureReading>();
-        final int zone;
-        private boolean boiled;
-
-        public MilkBoilerController(int zone) {
-            this.zone = zone;
-        }
-
-        @Override
-        public void reportTemperatures(Map<Byte, TemperatureReading> temperatures) {
-            System.out.println("reportTemperature:" + temperatures);
-           for (Entry<Byte, TemperatureReading> temp : temperatures.entrySet()) {
-                Byte address = temp.getKey();
-                if (temp.getValue().valid) {
-                    if (tempSensors.containsKey(address)) {
-                        // Update temperature
-                        tempSensors.put(address, temp.getValue());
-                    } else if (tempSensors.size() < 2) {
-                        // Add new temperature sensor
-                        tempSensors.put(address, temp.getValue());
-                    } else {
-                        System.out.println("More that one temp sensor, skipping this " + address);
-                    }
-                } else {
-                    if (tempSensors.containsKey(temp.getKey())) {
-                        System.out.println("Invalid temperature reading!");
-                        tempSensors.remove(address);
-                    }
-                }
-            }
-            if (tempSensors.size() > 0) {
-                List<Integer> sortedTemps = new ArrayList<Integer>();
-                for (TemperatureReading tempReading : tempSensors.values()) {
-                    sortedTemps.add(tempReading.temperature);
-                }
-                Collections.sort(sortedTemps);
-                int powerLevel;
-                if (tempSensors.size() == 1) {
-                    // One sensor only, assume fluid sensor
-                    powerLevel = getTargetPowerLevelFluidSensor(sortedTemps.get(0));
-                } else if (tempSensors.size() == 2) {
-                    // Two sensors, assume highest is the pot sensor
-                    int powerLevelFluidSensor = getTargetPowerLevelFluidSensor(sortedTemps.get(0));
-                    int powerLevelPotSensor = getTargetPowerLevelPotSensor(sortedTemps.get(1));
-                    powerLevel = Math.min(powerLevelFluidSensor, powerLevelPotSensor);
-                } else {
-                    powerLevel = 1;
-                }
-                inductionHob.setTargetPowerLevel(zone, powerLevel);
-            }
-        }
-
-        private int getTargetPowerLevelPotSensor(int temperature) {
-            int result;
-            if (temperature < 90) {
-                result = 11;
-            } else if (temperature < 95) {
-                result = 10;
-            } else if (temperature < 96) {
-                result = 9;
-            } else if (temperature < 97) {
-                result = 8;
-            } else if (temperature < 98) {
-                result = 8;
-            } else if (temperature < 99) {
-                result = 6;
-            } else if (temperature < 100) {
-                result = 5;
-            } else if (temperature < 105) {
-                result = 4;
-            } else if (temperature < 106) {
-                result = 2;
-            } else {
-                result = 1;
-            }
-            return result;
-        }
-
-        private int getTargetPowerLevelFluidSensor(int temperature) {
-            int result;
-            if (boiled) {
-                result = 1;
-            } else if (temperature < 70) {
-                result = 11;
-            } else if (temperature < 80) {
-                result = 10;
-            } else if (temperature < 86) {
-                result = 9;
-            } else if (temperature < 93) {
-                result = 8;
-            } else if (temperature < 94) {
-                result = 8;
-            } else if (temperature < 95) {
-                result = 6;
-            } else if (temperature < 96) {
-                result = 6;
-            } else if (temperature < 97) {
-                result = 5;
-            } else {
-                boiled = true;
-                setFinished();
-                result = 1;
-            }
-            return result;
-        }
-
-        private void setFinished() {
-            if (gui != null) {
-                gui.programDone(zone);
-            }
-            unRegisterTemperatureListener(this);
-        }
-
-        @Override
-        public void start() {
-            registerTemperatureListener(this);
-        }
-
-        @Override
-        public void stop() {
-            unRegisterTemperatureListener(this);
-        }
-    }
-
-    public void registerTemperatureListener(TemperatureListener listener) {
-        temperatureListeners.add(listener);
-        synchronized(this) {
-            listener.reportTemperatures(temperatures);
-        }
-    }
-
-    public void unRegisterTemperatureListener(TemperatureListener listener) {
-        temperatureListeners.remove(listener);
-    }
-
     public IOIOLooper createLooper() {
         return new Looper();
     }
 
     // From gui
-    public void setPowerLevels(int[] powerLevels) {
+    public void setPowerLevel(int zone, int powerLevel) {
         if (inductionHob != null) {
-            for (int i = 0; i < powerLevels.length; i++) {
-                inductionHob.setTargetPowerLevel(i, powerLevels[i]);
-            }
+            inductionHob.setTargetPowerLevel(zone, powerLevel);
         }
         update();
     }
 
     // From gui
-    public void startStopProgram(int zone, boolean start) {
+    public void stopProgram(final int zone) {
         if (powerControllers[zone] != null) {
             powerControllers[zone].stop();
+            powerControllers[zone] = null;
+            update();
         }
-        if (start) {
-            powerControllers[zone] = new MilkBoilerController(zone);
-            powerControllers[zone].start();
+    }
+
+    private Controller getController(final int zone) {
+        Controller controller = new Controller() {
+            @Override
+            public void setPowerLevel(int level) {
+                inductionHob.setTargetPowerLevel(zone, level);
+            }
+        };
+        return controller;
+    }
+
+    public void startMilkProgram(final int zone, Set<Byte> sensors) {
+        //TODO synchronized?
+        stopProgram(zone);
+        powerControllers[zone] = new MilkZoneController(getController(zone), sensors);
+        powerControllers[zone].start();
+        broadcastSensors();
+        update();
+    }
+
+    public void startProgram(ZoneController.Type type, final int zone, int targetTemp, Byte sensor) {
+        //TODO synchronized?
+        stopProgram(zone);
+        float[] targetTemps = {targetTemp};
+        Set<Byte> sensors = new HashSet<Byte>();
+        sensors.add(sensor);
+        powerControllers[zone] = new ZoneController(type, getController(zone), targetTemps, sensors);
+        powerControllers[zone].start();
+        broadcastSensors();
+        update();
+    }
+
+    public void setTargetTemperatures(final int zone, int targetTemp) {
+        if (powerControllers[zone] != null) {
+            float[] targetTemps = {(float)targetTemp};
+            powerControllers[zone].setTargetTemperatures(targetTemps);
         }
     }
 
@@ -436,12 +358,23 @@ public class InductionController implements EventCallback {
             address = tempEvent.getAddress();
             reportedTime = SystemClock.elapsedRealtime();
         }
+        @Override
+        public String toString() {
+            StringBuilder res = new StringBuilder();
+            if (!valid) {
+                res.append("invalid");
+            } else {
+                res.append(temperature).append("\u2103");
+                res.append(" (").append(address).append("@").append(reportedTime).append(")");
+            }
+            return res.toString();
+        }
     }
 
-    public void clearOldSensors() {
+    public void broadcastSensors() {
         //Remove a temperature sensor after MAX_TEMPERATURE_AGE -0.5s TODO a bit ugly
         long maxAge = SystemClock.elapsedRealtime() - (MAX_TEMPERATURE_AGE - 500);
-        System.out.println("Clearing old temperature sensors");
+        Log.w(LOG_TAG, "Clearing old temperature sensors");
 
         synchronized(this) {
             Set<Entry<Byte, TemperatureReading>> entrySet = temperatures.entrySet();
@@ -453,12 +386,15 @@ public class InductionController implements EventCallback {
                 }
             }
             for (Byte old : oldTemp) {
-                System.out.println("Removing " + old);
+                Log.w(LOG_TAG, "Removing " + old);
                 // Tell our listeners that the temperature is now considered invalid
                 temperatures.remove(old);
             }
-            for (TemperatureListener temperatureListener : temperatureListeners) {
-                temperatureListener.reportTemperatures(temperatures);
+
+            for (ZoneController zoneController : powerControllers) {
+                if (zoneController != null) {
+                    zoneController.reportTemperatures(temperatures);
+                }
             }
         }
     }
@@ -479,18 +415,22 @@ public class InductionController implements EventCallback {
                 // Update temperature in UI
                 temperatures.put(tempEvent.getAddress(), new TemperatureReading(tempEvent));
 
-                clearOldSensors();
                 looperThread.mHandler.removeMessages(CHECK_TEMPERATURES);
                 looperThread.mHandler.sendEmptyMessageDelayed(CHECK_TEMPERATURES,
                         MAX_TEMPERATURE_AGE);
-
-                for (TemperatureListener temperatureListener : temperatureListeners) {
-                    temperatureListener.reportTemperatures(temperatures);
-                }
+                broadcastSensors();
             }
             update();
         } else {
             System.err.println("Unknown event: " + event);
         }
+    }
+
+    public void removeAllGuis() {
+        guis.clear();
+    }
+
+    public void removeGui(Gui gui) {
+        guis.remove(gui);
     }
 }

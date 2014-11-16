@@ -1,0 +1,6 @@
+
+Rewrite activity_main.xml (see activity_main2.xml)
+Make the picture of the induction hob larger
+Zone should show values nicer. Perhapsbe a combined component in a separate layout file?
+Rotating power control? Or a "bent" power control so you can press a value directly maybe reuse same for temperature?
+

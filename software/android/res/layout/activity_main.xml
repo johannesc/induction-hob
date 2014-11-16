@@ -1,68 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
     android:keepScreenOn="true"
     android:clipChildren="false"
     >
-
-    <TextView
-        android:id="@+id/textViewTemperature"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/unknown_temperatue"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-
-    <ToggleButton
-        android:id="@+id/startStopProgramButton"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/togglebutton"
-        android:textOff="@string/program_off"
-        android:textOn="@string/program_on" />
+        android:orientation="horizontal"
+        >
 
-    <CheckBox
-        android:id="@+id/connectedBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:enabled="false"
-        android:text="@string/connected" />
+        <ImageView
+            android:id="@+id/connectedBox"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/connectedBoxDesc"
+            android:src="@drawable/empty" />
+
+        <ImageView
+            android:id="@+id/poweredBox"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/poweredBoxDesc"
+            android:src="@drawable/empty" />
+
+        <TextView
+            android:id="@+id/textViewTemperature"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/unknown_temperatue"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+    </LinearLayout>
 
     <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:clipChildren="false">
+        <ImageView
+            android:id="@+id/inductionHob"
+            android:layout_width="273dp"
+            android:layout_height="200dp"
+            android:contentDescription="@string/poweredBoxDesc"
+            android:src="@drawable/inductionhob" />
+
         <test.androidapp.ui.Zone
             android:id="@+id/leftBackZone"
             android:textSize="40sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0"/>
+            android:layout_width="136dp"
+            android:layout_height="100dp"
+            android:layout_alignLeft="@+id/inductionHob"
+            android:layout_alignTop="@+id/inductionHob"
+            android:textColor="#ffffff"
+            custom:icon="@+id/zone_back_left"
+            android:text="@string/defaultZoneText"/>
         <test.androidapp.ui.Zone
             android:id="@+id/rightBackZone"
             android:textSize="40sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_toRightOf="@id/leftBackZone"
-            android:text="0"/>
+            android:layout_width="136dp"
+            android:layout_height="100dp"
+            android:layout_alignRight="@+id/inductionHob"
+            android:layout_alignTop="@+id/inductionHob"
+            android:gravity="right"
+            android:textAlignment="gravity"
+            android:textColor="#ffffff"
+            custom:icon="@+id/zone_back_right"
+            android:text="@string/defaultZoneText"/>
         <test.androidapp.ui.Zone
             android:id="@+id/leftFrontZone"
             android:textSize="40sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/leftBackZone"
-            android:layout_alignLeft="@id/leftBackZone"
-            android:text="0"/>
-        <test.androidapp.ui.Zone
+            android:layout_width="136dp"
+            android:layout_height="100dp"
+            android:layout_alignLeft="@+id/inductionHob"
+            android:layout_alignBottom="@+id/inductionHob"
+            android:textColor="#ffffff"
+            custom:icon="@+id/zone_front_left"
+            android:text="@string/defaultZoneText"/>
+         <test.androidapp.ui.Zone
             android:id="@+id/rightFrontZone"
             android:textSize="40sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/leftBackZone"
-            android:layout_toRightOf="@id/leftFrontZone"
-            android:text="0"/>
+            android:layout_width="136dp"
+            android:layout_height="100dp"
+            android:layout_alignRight="@+id/inductionHob"
+            android:layout_alignBottom="@+id/inductionHob"
+            android:textColor="#ffffff"
+            android:gravity="right"
+            android:textAlignment="gravity"
+            custom:icon="@+id/zone_front_right"
+            android:text="@string/defaultZoneText"/>
     </RelativeLayout>
 </LinearLayout>

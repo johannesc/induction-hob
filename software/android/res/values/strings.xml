@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">InductionHob</string>
-    <string name="togglebutton">ToggleButton</string>
-    <string name="left_back_text">LB</string>
-    <string name="left_front_text">LF</string>
-    <string name="right_back_text">RB</string>
-    <string name="right_front_text">RF</string>
-    <string name="menu_settings">Settings</string>
     <string name="unknown_temperatue">--</string>
-    <string name="program_on">Program ON</string>
-    <string name="program_off">Program OFF</string>
-    <string name="connected">Connected to Induction Hob</string>
+    <string name="program_on">Stop program</string>
+    <string name="program_off">Start program</string>
+    <string name="connectedBoxDesc">Indication of Connection to the Induction Hob</string>
+    <string name="poweredBoxDesc">Shows if the Induction hob is powered on</string>
+    <string name="defaultZoneText"></string>
+    <string name="doneText">Done</string>
+    <string name="zoneDialogTitle"></string>
+
+    <string-array name="programs_array">
+        <item>Milk</item>
+        <item>Target temp</item>
+    </string-array>
+    <string name="default_temp">0\u2103</string>
 </resources>

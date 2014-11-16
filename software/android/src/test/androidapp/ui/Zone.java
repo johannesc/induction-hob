@@ -1,44 +1,53 @@
 package test.androidapp.ui;
 
+import java.util.Set;
+
+import test.androidapp.InductionController.TemperatureReading;
 import test.androidapp.MainActivity;
 import test.androidapp.R;
+import test.androidapp.ZoneController;
 import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup.LayoutParams;
-import android.view.ViewParent;
-import android.widget.Button;
-import android.widget.RelativeLayout;
-import android.widget.SeekBar;
+import android.util.SparseArray;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.Transformation;
+import android.widget.TextView;
 
 /**
  * UI for a zone control. In the future me might wan't to add more support for things like:
  * - Show if a program is running or not for this zone
+ * - Show current temperature for this zone
  * - Show current target power level
- * - Show if the zone is hot or not
  * - Make it possible to start a program from the zone?
  * - Show "selected" zone
  * - Perhaps we should do some of above using a compound view instead?
  */
-public class Zone extends Button {
+public class Zone extends TextView {
     private static final String LOG_TAG = MainActivity.LOG_TAG + " Zone";
 
     public String delimiter;
     public boolean fancyText;
+    public ZoneController programRunning;
 
     int offsetX;
     int offsetY;
     boolean viewAdded = false;
-    final View floatingDialog;
     private int level = 0;
-    RelativeLayout rl;
-    private ChangeListener changeListener;
+    private boolean hot;
+    private boolean present = true;
+    private int icon = R.drawable.zone_front_left;
 
     DisplayMetrics metrics = new DisplayMetrics();
+
+    @SuppressWarnings("unused")
+    private int targetLevel;
+
+    private boolean powered;
 
     public Zone(Context context) {
         this(context, null);
@@ -48,39 +57,21 @@ public class Zone extends Button {
     public Zone(Context context, AttributeSet attrs) {
         super(context, attrs);
         Log.w(LOG_TAG, "JC Normal constructor");
-        floatingDialog = createPopupView(context);
+        getAttribute(context, attrs);
     }
 
     public Zone(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         Log.w(LOG_TAG, "Creating Zone defstyle=" + defStyle + " attrs=" + attrs);
-        floatingDialog = createPopupView(context);
+        getAttribute(context, attrs);
     }
 
-    private View createPopupView(Context context) {
-        LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View floatingDialog = inflater.inflate(R.layout.seekbar, null, false);
-        final SeekBar floatSeekBar = (SeekBar) floatingDialog.findViewById(R.id.seekBar);
-        floatSeekBar.setOnSeekBarChangeListener(new SeekBarListener());
-        floatSeekBar.setProgress(level);
-        return floatingDialog;
-    }
-
-    private class SeekBarListener implements SeekBar.OnSeekBarChangeListener {
-        @Override
-        public void onStopTrackingTouch(SeekBar seekBar) {
-        }
-
-        @Override
-        public void onStartTrackingTouch(SeekBar seekBar) {
-        }
-
-        @Override
-        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            if (fromUser) {
-                changeListener.onLevelChanged(Zone.this, progress);
-            }
-        }
+    private void getAttribute(Context context, AttributeSet attrs) {
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.Zone, 0, 0);
+        Log.w(LOG_TAG, "icon =" + icon);
+        icon = a.getResourceId(R.styleable.Zone_icon, icon);
+        Log.w(LOG_TAG, "icon =" + icon);
+        a.recycle();
     }
 
     private String getCharForLevel(int level) {
@@ -89,98 +80,88 @@ public class Zone extends Button {
     }
 
     private void updateText() {
-        setText(getCharForLevel(level));
+        setTextColor(hot ? Color.RED : Color.WHITE);
+        if (powered) {
+            StringBuilder text = new StringBuilder();
+            if (present || level == 0) {
+                text.append(getCharForLevel(level));
+            } else {
+                text.append("F");
+            }
+            //text += "\n" + getCharForLevel(targetLevel);
+            if (programRunning != null) { //TODO extract info about controller, e.g. temp, target temp etc
+                ZoneController.Type type = programRunning.getType();
+                if (type == ZoneController.Type.MILK) {
+                    text.append(" milk");
+                } else if (type == ZoneController.Type.TARGET_TEMP) {
+                    Set<Byte> sensors = programRunning.getUsedSensorAddresses();
+                    SparseArray<TemperatureReading> temps = programRunning.getCurrentTemperatures();
+                    text.append(" ").append((int)programRunning.getTargetTemperatures()[0]);
+                    for (Byte adr : sensors) {
+                        text.append("(").append(temps.get(adr).temperature).append(")");
+                    }
+                } else {
+                    text.append(" ?prog");
+                }
+            }
+            //Log.w(LOG_TAG, "Setting text to \"" + text + "\"");
+            setText(text);
+        } else {
+            if (hot) {
+                setText("H");
+            } else {
+                setText(R.string.defaultZoneText);
+            }
+        }
+
+        if (present || level == 0 || !powered) {
+            if (getAnimation() != null) {
+                clearAnimation();
+            }
+        } else {
+            if (getAnimation() == null) {
+                // A custom animation that blinks the text by changing the alpha value
+                Animation anim = new AlphaAnimation(0.0f, 1.0f) {
+                    @Override
+                    protected void applyTransformation(float interpolatedTime, Transformation t) {
+                        t.setAlpha(interpolatedTime > 0.5 ? 1 : 0);
+                    }
+                };
+                anim.setDuration(1000);
+                anim.setRepeatMode(Animation.REVERSE);
+                anim.setRepeatCount(Animation.INFINITE);
+                startAnimation(anim);
+            }
+        }
     }
 
-     MotionEvent downEvent = null;
+    public void setCurrentLevel(int level) {
+        this.level = level;
+        updateText();
+    }
 
-     @Override
-     public boolean onTouchEvent(MotionEvent event) {
-         boolean handled = false;
+    public void setHot(boolean hot) {
+        this.hot = hot;
+        updateText();
+    }
 
-         ViewParent parent = getParent();
-         if (rl == null) {
-             if (parent instanceof RelativeLayout) {
-                 Log.w(LOG_TAG, "Got my view group!");
-                 rl = (RelativeLayout) parent;
+    public void setPotPresent(boolean present) {
+        this.present = present;
+        updateText();
+    }
 
-                 LayoutParams params = rl.getLayoutParams();
-                 Log.w(LOG_TAG, "layout  width = " + rl.getWidth());
-                 // Make fixed size so it does not resize when we popup the slider
-                 params.width = rl.getWidth();
-                 rl.setLayoutParams(params);
+    public void setTargetPowerLevel(int target) {
+        this.targetLevel = target;
+        updateText();
+    }
 
-             } else {
-                 Log.w(LOG_TAG, "Parent must be a RelativeLayout:" + parent);
-                 return false;
-             }
-         }
+    public void setPowered(boolean powered) {
+        this.powered = powered;
+        updateText();
+    }
 
-         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-             floatingDialog.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-
-             Log.w(LOG_TAG, "w2=" + floatingDialog.getMeasuredWidth() + " h2=" + floatingDialog.getMeasuredHeight());
-
-             Log.w(LOG_TAG, "v.getX()=" + getX() + " v.getY()=" + getY());
-
-             int w = floatingDialog.getMeasuredWidth();
-             int h = floatingDialog.getMeasuredHeight();
-
-             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
-
-             offsetX = -((w / 12) * level + w/12) + (int)event.getX();
-             offsetY = - (h / 4) * 3 + (int)event.getY();
-             params.leftMargin = offsetX + (int)getX();
-             params.topMargin += offsetY + (int)getY() - 100;
-
-             rl.addView(floatingDialog, params);
-             if (downEvent != null) {
-                 downEvent.recycle();
-             }
-             downEvent = MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), event.getX() - offsetX, event.getY()- offsetY, event.getMetaState());
-             // Post the down event so the dialog is inflated first
-             post(new Runnable() {
-                @Override
-                public void run() {
-                    if (downEvent != null) {
-                        floatingDialog.dispatchTouchEvent(downEvent);
-                        downEvent.recycle();
-                        downEvent = null;
-                    }
-                }
-             });
-             viewAdded = true;
-             handled = true;
-         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-             MotionEvent newEvent = MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), event.getX() - offsetX, event.getY()- offsetY, event.getMetaState());
-             floatingDialog.dispatchTouchEvent(newEvent);
-             newEvent.recycle();
-             newEvent = null;
-
-             rl.removeView(floatingDialog);
-             viewAdded = false;
-             handled = true;
-         } else if (viewAdded){
-             MotionEvent newEvent = MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), event.getX() - offsetX, event.getY()- offsetY, event.getMetaState());
-             floatingDialog.dispatchTouchEvent(newEvent);
-             newEvent.recycle();
-             newEvent = null;
-             handled = true;
-         }
-         return handled;
-     }
-
-     public interface ChangeListener {
-         public void onLevelChanged(Zone zone, int level);
-     }
-
-     public void setChangeListener(ChangeListener changeListener) {
-         this.changeListener = changeListener;
-     }
-
-     public void setCurrentLevel(int level) {
-         this.level = level;
-         updateText();
-     }
+    public void setProgramRunning(ZoneController programRunning) {
+        this.programRunning = programRunning;
+        updateText();
+    }
 }

@@ -14,6 +14,9 @@ public class Zone {
     private boolean controlling = false;
 
     private static final int POWER_LEVEL_P = 11;
+    public static final int POWER_LEVEL_MAX = 11;
+    public static final int POWER_LEVEL_MIN = 1;
+    public static final int POWER_LEVEL_OFF = 0;
 
     private static final short[] ZONE_TO_PLUS_MASK = new short[4];
     private static final short[] ZONE_TO_MINUS_MASK = new short[4];
