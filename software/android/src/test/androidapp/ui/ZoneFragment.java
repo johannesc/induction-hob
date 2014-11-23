@@ -56,6 +56,7 @@ public class ZoneFragment extends DialogFragment implements Gui {
         R.drawable.inductionhob_right_front_selected,
         };
     protected static final int PROGRAM_INDEX_MILK = 0;
+    protected static final int TEMP_OFFSET = 30; // We start at 30 degrees
 
     public static ZoneFragment newInstance(int zone, int level, int program) {
         ZoneFragment zoneDialog = new ZoneFragment();
@@ -107,7 +108,7 @@ public class ZoneFragment extends DialogFragment implements Gui {
                 } else {
                     if (unusedTemperatures.size() == 1) {
                         inductionController.startProgram(ZoneController.Type.TARGET_TEMP, zone,
-                                targetTempSeekBar.getProgress(), unusedTemperatures.get(0).address);
+                                targetTempSeekBar.getProgress() + TEMP_OFFSET, unusedTemperatures.get(0).address);
                     } else {
                         AlertDialog.Builder builder = new AlertDialog.Builder(inflater.getContext());
                         builder.setTitle("Select temperature sensor");
@@ -121,7 +122,7 @@ public class ZoneFragment extends DialogFragment implements Gui {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 inductionController.startProgram(ZoneController.Type.TARGET_TEMP,
-                                        zone, targetTempSeekBar.getProgress(),
+                                        zone, targetTempSeekBar.getProgress() + TEMP_OFFSET,
                                         unusedTemperatures.get(which).address);
                             }
                         });
@@ -186,10 +187,10 @@ public class ZoneFragment extends DialogFragment implements Gui {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                targetTempText.setText(progress + "\u2103");
+                targetTempText.setText((progress + TEMP_OFFSET) + "\u2103");
                 if (fromUser) {
                     Log.w(LOG_TAG, "progress=" + progress);
-                    inductionController.setTargetTemperatures(zone, progress);
+                    inductionController.setTargetTemperatures(zone, progress + TEMP_OFFSET);
                 }
             }
         });

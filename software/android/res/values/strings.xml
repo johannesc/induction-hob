@@ -14,5 +14,6 @@
         <item>Milk</item>
         <item>Target temp</item>
     </string-array>
-    <string name="default_temp">0\u2103</string>
+    <string name="default_temp">30\u2103</string>
+    <string name="max_temp">150\u2103</string>
 </resources>

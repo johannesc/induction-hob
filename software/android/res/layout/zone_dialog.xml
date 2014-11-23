@@ -1,26 +1,50 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
-    <include layout="@layout/seekbar" android:id="@+id/targetLevel"/>
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:minWidth="1000dp"
+    android:minHeight="1000dp">
+
+    <include
+        android:id="@+id/targetLevel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        layout="@layout/seekbar" />
+
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content">
+
         <SeekBar
             android:id="@+id/targetTempSeek"
-            android:layout_width="230dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:max="150"
-            />
+            android:layout_weight="1"
+            android:max="120" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            >
+        <!-- Invisible to allocate right space for next TextView -->
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/max_temp"
+            android:ellipsize="none"
+            android:singleLine="true"
+            android:visibility="invisible"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
         <TextView
             android:id="@+id/targetTempText"
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="@string/default_temp"
             android:ellipsize="none"
             android:singleLine="true"
             android:textAppearance="?android:attr/textAppearanceLarge" />
+        </FrameLayout>
     </LinearLayout>
     <Spinner
         android:id="@+id/programSelector"

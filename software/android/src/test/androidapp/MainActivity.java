@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -96,7 +97,6 @@ public class MainActivity extends Activity implements Gui, ZoneFramgentListener 
                    // Create and show the dialog.
                    DialogFragment newFragment = ZoneFragment.newInstance(finalZoneIndex, 0, 0); //TODO
                    newFragment.show(ft, FRAGMENT_ZONE);
-//                   newFragment.show(getFragmentManager(), "dialog");
                 }
             });
         }
