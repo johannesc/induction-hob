@@ -35,62 +35,77 @@
             android:text="@string/unknown_temperatue"
             android:textAppearance="?android:attr/textAppearanceLarge" />
     </LinearLayout>
-
     <RelativeLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:clipChildren="false">
+            android:layout_width="400dp"
+            android:layout_height="300dp"
+            android:layout_gravity="center"
+        >
         <ImageView
             android:id="@+id/inductionHob"
-            android:layout_width="273dp"
-            android:layout_height="200dp"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
             android:contentDescription="@string/poweredBoxDesc"
             android:src="@drawable/inductionhob" />
+        <TableLayout
+            android:layout_width="fill_parent"
+            android:stretchColumns="true"
+            android:shrinkColumns="true"
+            android:layout_height="fill_parent" >
 
-        <test.androidapp.ui.Zone
-            android:id="@+id/leftBackZone"
-            android:textSize="40sp"
-            android:layout_width="136dp"
-            android:layout_height="100dp"
-            android:layout_alignLeft="@+id/inductionHob"
-            android:layout_alignTop="@+id/inductionHob"
-            android:textColor="#ffffff"
-            custom:icon="@+id/zone_back_left"
-            android:text="@string/defaultZoneText"/>
-        <test.androidapp.ui.Zone
-            android:id="@+id/rightBackZone"
-            android:textSize="40sp"
-            android:layout_width="136dp"
-            android:layout_height="100dp"
-            android:layout_alignRight="@+id/inductionHob"
-            android:layout_alignTop="@+id/inductionHob"
-            android:gravity="right"
-            android:textAlignment="gravity"
-            android:textColor="#ffffff"
-            custom:icon="@+id/zone_back_right"
-            android:text="@string/defaultZoneText"/>
-        <test.androidapp.ui.Zone
-            android:id="@+id/leftFrontZone"
-            android:textSize="40sp"
-            android:layout_width="136dp"
-            android:layout_height="100dp"
-            android:layout_alignLeft="@+id/inductionHob"
-            android:layout_alignBottom="@+id/inductionHob"
-            android:textColor="#ffffff"
-            custom:icon="@+id/zone_front_left"
-            android:text="@string/defaultZoneText"/>
-         <test.androidapp.ui.Zone
-            android:id="@+id/rightFrontZone"
-            android:textSize="40sp"
-            android:layout_width="136dp"
-            android:layout_height="100dp"
-            android:layout_alignRight="@+id/inductionHob"
-            android:layout_alignBottom="@+id/inductionHob"
-            android:textColor="#ffffff"
-            android:gravity="right"
-            android:textAlignment="gravity"
-            custom:icon="@+id/zone_front_right"
-            android:text="@string/defaultZoneText"/>
+            <TableRow
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:padding="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal" >
+                <test.androidapp.ui.Zone
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:id="@+id/leftBackZone"
+                    android:textSize="40sp"
+                    android:textColor="#ffffff"
+                    custom:icon="@+id/zone_back_left"
+                    android:text="@string/defaultZoneText"/>
+                <test.androidapp.ui.Zone
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:id="@+id/rightBackZone"
+                    android:textSize="40sp"
+                    android:gravity="right"
+                    android:textAlignment="gravity"
+                    android:textColor="#ffffff"
+                    custom:icon="@+id/zone_back_right"
+                    android:text="@string/defaultZoneText"/>
+            </TableRow>
+            <TableRow
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:padding="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal" >
+                <test.androidapp.ui.Zone
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:id="@+id/leftFrontZone"
+                    android:textSize="40sp"
+                    android:textColor="#ffffff"
+                    custom:icon="@+id/zone_front_left"
+                    android:text="@string/defaultZoneText"/>
+                 <test.androidapp.ui.Zone
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:id="@+id/rightFrontZone"
+                    android:textSize="40sp"
+                    android:textColor="#ffffff"
+                    android:gravity="right"
+                    android:textAlignment="gravity"
+                    custom:icon="@+id/zone_front_right"
+                    android:text="@string/defaultZoneText"/>
+             </TableRow>
+        </TableLayout>
     </RelativeLayout>
 </LinearLayout>
