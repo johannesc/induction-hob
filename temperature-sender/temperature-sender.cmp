@@ -1,0 +1,227 @@
+Cmp-Mod V01 Created by Cvpcb 0.201505041002+5641~23~ubuntu14.04.1-product   date = Thu 07 May 2015 09:05:10 PM CEST
+
+BeginCmp
+TimeStamp = /5548B9A8;
+Reference = C1;
+ValeurCmp = 10uF?;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /5548BB4A;
+Reference = C2;
+ValeurCmp = C;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A23FA;
+Reference = C3;
+ValeurCmp = 1uF;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549FE63;
+Reference = C4;
+ValeurCmp = 16pF;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A0362;
+Reference = C5;
+ValeurCmp = 0.1uF;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549FFCF;
+Reference = C6;
+ValeurCmp = 16pF;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A389E;
+Reference = C7;
+ValeurCmp = 0.1uF;
+IdModule  = Capacitors_SMD:C_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /5548B793;
+Reference = D1;
+ValeurCmp = D;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /5548B8AA;
+Reference = D2;
+ValeurCmp = MAX 6v;
+IdModule  = Diodes_SMD:Diode-SMA_Handsoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A2817;
+Reference = D3;
+ValeurCmp = Led_Small;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A7C01;
+Reference = K1;
+ValeurCmp = SERVO;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /5548B5B0;
+Reference = P1;
+ValeurCmp = CONN_01X02;
+IdModule  = Pin_Headers:Pin_Header_Angled_1x02;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549EB21;
+Reference = P2;
+ValeurCmp = CONN_01X02;
+IdModule  = Pin_Headers:Pin_Header_Angled_1x02;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549EBC9;
+Reference = P3;
+ValeurCmp = CONN_01X02;
+IdModule  = Pin_Headers:Pin_Header_Angled_1x02;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549EFB4;
+Reference = P4;
+ValeurCmp = CONN_01X02;
+IdModule  = Pin_Headers:Pin_Header_Angled_1x02;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549EFBA;
+Reference = P5;
+ValeurCmp = CONN_01X02;
+IdModule  = Pin_Headers:Pin_Header_Angled_1x02;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A0C05;
+Reference = P6;
+ValeurCmp = USB_OTG;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A1A98;
+Reference = P7;
+ValeurCmp = CONN_01X01;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A8A7B;
+Reference = P8;
+ValeurCmp = CONN_01X05;
+IdModule  = ;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549E895;
+Reference = R1;
+ValeurCmp = 100R;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A2B86;
+Reference = R2;
+ValeurCmp = 330R;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A1EA3;
+Reference = R3;
+ValeurCmp = 22R;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A1FE1;
+Reference = R4;
+ValeurCmp = 22R;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A4116;
+Reference = R5;
+ValeurCmp = 47k;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A3CFE;
+Reference = R6;
+ValeurCmp = 47k;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A57EE;
+Reference = R7;
+ValeurCmp = 5k;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A4D12;
+Reference = R8;
+ValeurCmp = 5k;
+IdModule  = Resistors_SMD:R_0603_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A020B;
+Reference = SW1;
+ValeurCmp = SW_PUSH;
+IdModule  = Buttons_Switches_SMD:SW_SPST_PTS645;
+EndCmp
+
+BeginCmp
+TimeStamp = /554A3892;
+Reference = SW2;
+ValeurCmp = SW_PUSH;
+IdModule  = Buttons_Switches_SMD:SW_SPST_PTS645;
+EndCmp
+
+BeginCmp
+TimeStamp = /5548BA7A;
+Reference = U1;
+ValeurCmp = MCP1700T-3302E/T;
+IdModule  = Housings_SOT-23_SOT-143_TSOT-6:SOT-23_Handsoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549F2D7;
+Reference = U2;
+ValeurCmp = ATmega32U4-AU;
+IdModule  = Housings_QFP:TQFP-44_10x10mm_Pitch0.8mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /5549FD5C;
+Reference = Y1;
+ValeurCmp = Crystal;
+IdModule  = ;
+EndCmp
+
+EndListe
