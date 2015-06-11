@@ -748,7 +748,7 @@
   )
 
   (module kicad-footprints:Pin_Header_Angled_SMD_1x02 (layer F.Cu) (tedit 5556F1CB) (tstamp 5556FC45)
-    (at 110.5 113.7 180)
+    (at 57.7 125.2 180)
     (descr "SMD pin header")
     (tags "pin header")
     (path /5548B5B0)
@@ -1244,7 +1244,7 @@
   )
 
   (module Capacitors_SMD:C_0603_HandSoldering (layer F.Cu) (tedit 541A9B4D) (tstamp 5579E061)
-    (at 122.3 113.1 270)
+    (at 69.5 124.6 270)
     (descr "Capacitor SMD 0603, hand soldering")
     (tags "capacitor 0603")
     (path /557A0613)
@@ -1273,7 +1273,7 @@
   )
 
   (module Capacitors_SMD:C_0603_HandSoldering (layer F.Cu) (tedit 541A9B4D) (tstamp 5579E06D)
-    (at 131.3 114.4 90)
+    (at 78.5 125.9 90)
     (descr "Capacitor SMD 0603, hand soldering")
     (tags "capacitor 0603")
     (path /5567A105)
@@ -1302,7 +1302,7 @@
   )
 
   (module kicad-footprints:SOD-80 (layer F.Cu) (tedit 5579D848) (tstamp 5579E074)
-    (at 116.1 117.7)
+    (at 63.3 129.2)
     (path /5579E282)
     (fp_text reference D4 (at 0 1.8) (layer F.SilkS)
       (effects (font (size 1 1) (thickness 0.15)))
@@ -1318,7 +1318,7 @@
   )
 
   (module kicad-footprints:SOD-80 (layer F.Cu) (tedit 5579D848) (tstamp 5579E07B)
-    (at 116.4 107.8 180)
+    (at 63.6 119.3 180)
     (path /5579DCA7)
     (fp_text reference D5 (at 0 1.8 180) (layer F.SilkS)
       (effects (font (size 1 1) (thickness 0.15)))
@@ -1334,7 +1334,7 @@
   )
 
   (module Housings_TO-92:TO-92_Inline_Narrow_Oval (layer F.Cu) (tedit 54F24281) (tstamp 5579E089)
-    (at 126.8 114.7 90)
+    (at 74 126.2 90)
     (descr "TO-92 leads in-line, narrow, oval pads, drill 0.6mm (see NXP sot054_po.pdf)")
     (tags "to-92 sc-43 sc-43a sot54 PA33 transistor")
     (path /5579F850)
@@ -1365,7 +1365,7 @@
   )
 
   (module kicad-footprints:SOD-80 (layer F.Cu) (tedit 5579D848) (tstamp 5579F0B7)
-    (at 116.3 110.8 180)
+    (at 63.5 122.3 180)
     (path /5548B793)
     (fp_text reference D1 (at 0 1.8 180) (layer F.SilkS)
       (effects (font (size 1 1) (thickness 0.15)))
@@ -1381,7 +1381,7 @@
   )
 
   (module kicad-footprints:SOD-80 (layer F.Cu) (tedit 5579D848) (tstamp 5579F0BD)
-    (at 116.2 114.3)
+    (at 63.4 125.8)
     (path /5579E1D7)
     (fp_text reference D2 (at 0 1.8) (layer F.SilkS)
       (effects (font (size 1 1) (thickness 0.15)))
@@ -1426,7 +1426,7 @@
   )
 
   (module Housings_SOT-89:SOT89-3_Housing_Handsoldering (layer F.Cu) (tedit 0) (tstamp 5579FCFF)
-    (at 136.6 114.5 90)
+    (at 83.8 126 90)
     (descr "SOT89-3, Housing, Handsoldering,")
     (tags "SOT89-3, Housing, Handsoldering,")
     (path /55678F9B)

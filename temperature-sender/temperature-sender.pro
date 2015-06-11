@@ -1,4 +1,4 @@
-update=Wed 06 May 2015 01:37:33 PM CEST
+update=Thu 11 Jun 2015 09:04:03 PM CEST
 version=1
 last_client=kicad
 [cvpcb]
@@ -44,8 +44,8 @@ LibName31=kicad-components
 [pcbnew]
 version=1
 PageLayoutDescrFile=
-LastNetListRead=
-UseCmpFile=1
+LastNetListRead=temperature-sender.net
+UseCmpFile=0
 PadDrill=0.6
 PadDrillOvalY=0.6
 PadSizeH=1.5
