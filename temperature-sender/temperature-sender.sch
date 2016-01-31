@@ -748,7 +748,7 @@ L R R3
 U 1 1 5589D563
 P 2950 2200
 F 0 "R3" V 2850 2100 50  0000 C CNN
-F 1 "240R" V 2950 2200 50  0000 C CNN
+F 1 "330R" V 2950 2200 50  0000 C CNN
 F 2 "Resistors_SMD:R_0603_HandSoldering" V 2880 2200 30  0001 C CNN
 F 3 "" H 2950 2200 30  0000 C CNN
 	1    2950 2200
@@ -759,14 +759,14 @@ L R R4
 U 1 1 5589D95B
 P 2950 2600
 F 0 "R4" V 2850 2500 50  0000 C CNN
-F 1 "1k5" V 2950 2600 50  0000 C CNN
+F 1 "1k8" V 2950 2600 50  0000 C CNN
 F 2 "Resistors_SMD:R_0603_HandSoldering" V 2880 2600 30  0001 C CNN
 F 3 "" H 2950 2600 30  0000 C CNN
 	1    2950 2600
 	-1   0    0    1   
 $EndComp
 Text Notes 1850 1650 0    60   ~ 0
-Vout = 1.25*(1+R2/R1)\nVout = 1.25*(1+1500/240) \nVout = 9v
+Vout = 1.25*(1+R2/R1)\nVout = 1.25*(1+1800/330) \nVout = 8.1v
 $Comp
 L C C4
 U 1 1 5589E3B2
@@ -823,7 +823,7 @@ F 3 "" H 3850 2850 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Text Label 2950 1900 0    60   ~ 0
-9v
+8.1v
 $Comp
 L C C9
 U 1 1 558A22D9
